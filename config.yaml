@@ -1,0 +1,204 @@
+# Hermes Software Factory — profile configuration
+# Install: hermes profile install github.com/dxas90/hermes-factory
+# Docs:    https://hermes-agent.nousresearch.com/docs/user-guide/configuration
+#
+# Quick start:
+#   1. Set model.default and model.provider (or leave blank to be prompted at first run).
+#   2. Optionally set per-stage provider/model under delegation.backends.factory-router.stages.
+#      Leave a stage's provider+model blank to inherit model.default / model.provider.
+#   3. Fill in factory/checks.sh with your repo's test/lint/build commands.
+#   4. Set "vcs": "github" or "vcs": "gitlab" in factory/config.json.
+#   5. Run: hermes -p factory chat  then  /factory run
+
+model:
+  default: ''          # e.g. claude-opus-4-5  |  gpt-4o  |  gemini-2.5-pro
+  provider: ''         # e.g. anthropic  |  openrouter  |  gemini
+
+# ── Delegation: subagent routing for the factory pipeline ─────────────────────
+# The hermes-factory-router plugin adds a `stage` parameter to delegate_task.
+# Each stage mirrors the `auxiliary:` pattern: provider / model / base_url / api_key / timeout.
+# Leave provider+model blank on a stage to inherit delegation.model / delegation.provider.
+delegation:
+  model: ''            # fallback model for stages with no explicit model
+  provider: ''         # fallback provider for stages with no explicit provider
+  base_url: ''
+  api_key: ''
+  api_mode: ''
+  backend: factory-router
+  max_concurrent_children: 10
+  max_spawn_depth: 2         # orchestrator -> stage agents — do not lower
+  max_iterations: 250
+  child_timeout_seconds: 900
+  reasoning_effort: medium
+  subagent_auto_approve: true   # pipeline runs unattended — do not disable
+  inherit_mcp_toolsets: false
+  backends:
+    factory-router:
+      # Each stage entry: provider / model / base_url / api_key / timeout
+      # Omit provider+model to fall through to delegation.provider / delegation.model above.
+      stages:
+        intake:
+          provider: ''   # recommended: a fast/cheap model (haiku, flash, gpt-4o-mini)
+          model: ''
+          base_url: ''
+          api_key: ''
+          timeout: 120
+        spec:
+          provider: ''   # recommended: a capable reasoning model (opus, sonnet, gpt-4o)
+          model: ''
+          base_url: ''
+          api_key: ''
+          timeout: 300
+        build:
+          provider: ''   # recommended: best available — this writes the actual code
+          model: ''
+          base_url: ''
+          api_key: ''
+          timeout: 900
+        review-code:
+          provider: ''   # recommended: fast model for low risk, capable for high risk
+          model: ''
+          base_url: ''
+          api_key: ''
+          timeout: 120
+        review-security:
+          provider: ''   # recommended: capable reasoning model — security is high-stakes
+          model: ''
+          base_url: ''
+          api_key: ''
+          timeout: 180
+        review-ux:
+          provider: ''   # recommended: mid-tier model with vision for page screenshots
+          model: ''
+          base_url: ''
+          api_key: ''
+          timeout: 120
+        review-ui:
+          provider: ''   # recommended: fast model; visual consistency is pattern matching
+          model: ''
+          base_url: ''
+          api_key: ''
+          timeout: 90
+        approve:
+          provider: ''   # recommended: best available — APPROVE triggers an auto-merge
+          model: ''
+          base_url: ''
+          api_key: ''
+          timeout: 180
+
+# ── Plugins ────────────────────────────────────────────────────────────────────
+plugins:
+  enabled:
+    - hermes-factory-router
+  disabled: []
+
+# ── Display ────────────────────────────────────────────────────────────────────
+display:
+  skin: factory
+  compact: false
+  streaming: true
+  inline_diffs: true
+  show_cost: true            # show per-turn cost — useful when running factory jobs
+  final_response_markdown: strip
+  persistent_output: true
+  persistent_output_max_lines: 200
+  tool_progress: all
+  turn_completion_explainer: true
+  file_mutation_verifier: true
+
+# ── Memory ─────────────────────────────────────────────────────────────────────
+memory:
+  memory_enabled: true
+  user_profile_enabled: true
+  memory_char_limit: 2200
+  user_char_limit: 1375
+  nudge_interval: 10
+  provider: 'default'
+  flush_min_turns: 6
+
+# ── Agent behaviour ────────────────────────────────────────────────────────────
+agent:
+  max_turns: 60
+  reasoning_effort: high
+  task_completion_guidance: true
+  environment_probe: true
+  tool_use_enforcement: auto
+  verify_on_stop: false
+  api_max_retries: 3
+  gateway_timeout: 1800
+
+# ── Security ───────────────────────────────────────────────────────────────────
+security:
+  redact_secrets: true
+  allow_private_urls: false
+
+# ── Approvals ──────────────────────────────────────────────────────────────────
+# manual: every shell command requires approval (safe default for new installs)
+# off:    run unattended (set after you've verified the factory works correctly)
+approvals:
+  mode: manual
+  timeout: 60
+  cron_mode: deny
+
+# ── Context compression ────────────────────────────────────────────────────────
+context:
+  engine: compressor
+
+compression:
+  enabled: true
+  threshold: 0.5
+  target_ratio: 0.2
+  protect_last_n: 20
+  protect_first_n: 3
+  hygiene_hard_message_limit: 400
+  abort_on_summary_failure: false
+
+# ── Tool output limits ─────────────────────────────────────────────────────────
+tool_output:
+  max_bytes: 50000
+  max_lines: 2000
+
+file_read_max_chars: 100000
+
+# ── Goals ─────────────────────────────────────────────────────────────────────
+goals:
+  max_turns: 20
+
+# ── Sessions ──────────────────────────────────────────────────────────────────
+sessions:
+  auto_prune: false
+  retention_days: 90
+
+# ── Cron ──────────────────────────────────────────────────────────────────────
+cron:
+  wrap_response: true
+
+# ── Kanban (internal job tracking) ────────────────────────────────────────────
+kanban:
+  orchestrator_profile: 'factory'
+  default_assignee: 'factory'
+  dispatch_in_gateway: false   # factory runs from CLI, not gateway dispatcher
+  auto_decompose: false
+
+# ── Web ────────────────────────────────────────────────────────────────────────
+web:
+  backend: ''
+  search_backend: ''
+  extract_backend: ''
+
+# ── Terminal ───────────────────────────────────────────────────────────────────
+terminal:
+  backend: local
+  timeout: 180
+  persistent_shell: true
+  lifetime_seconds: 300
+  auto_source_bashrc: true
+
+# ── Prompt caching ─────────────────────────────────────────────────────────────
+prompt_caching:
+  cache_ttl: 5m
+
+# ── Internal ───────────────────────────────────────────────────────────────────
+_left_core_scoped: []
+_left_core_installed: []
+_config_version: 1

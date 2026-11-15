@@ -1,0 +1,61 @@
+{
+  "repo": "example-user/calculator",
+  "path": "/home/user/calculator",
+  "vcs": "github",
+  "issue": 2,
+  "title": "Show a history of results on the page",
+  "url": "https://github.com/example-user/calculator/issues/2",
+  "branch": "factory/issue-2",
+  "base": "main",
+  "stage": "pr",
+  "state": "done",
+  "result": "ready",
+  "pr": "https://github.com/example-user/calculator/pull/7",
+  "pr_url": "https://github.com/example-user/calculator/pull/7",
+  "risk": "low",
+  "surfaces": [
+    "ui"
+  ],
+  "agents": {
+    "reviewers": {
+      "code": "haiku",
+      "ux": "sonnet",
+      "ui": "haiku"
+    }
+  },
+  "round": 1,
+  "round_limit": 3,
+  "reviews": {
+    "code": "PASS",
+    "ux": "PASS",
+    "ui": "PASS"
+  },
+  "started": "2026-10-22T00:03:32Z",
+  "updated": "2026-10-22T00:07:05Z",
+  "stages": {
+    "ingest": "2026-10-22T00:03:32Z",
+    "spec": "2026-10-22T00:04:00Z",
+    "build": "2026-10-22T00:04:30Z",
+    "gate": "2026-10-22T00:05:30Z",
+    "review": "2026-10-22T00:06:00Z",
+    "approve": "2026-10-22T00:06:30Z",
+    "pr": "2026-10-22T00:07:00Z"
+  },
+  "events": [
+    {
+      "at": "2026-10-22T00:03:32Z",
+      "stage": "ingest",
+      "text": "Picked #2 from 2 queued issue(s)"
+    },
+    {
+      "at": "2026-10-22T00:05:30Z",
+      "stage": "gate",
+      "text": "Gate PASS in 12s (round 1)"
+    },
+    {
+      "at": "2026-10-22T00:07:00Z",
+      "stage": "pr",
+      "text": "Opened PR: https://github.com/example-user/calculator/pull/7"
+    }
+  ]
+}

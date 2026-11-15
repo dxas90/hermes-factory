@@ -1,0 +1,65 @@
+{
+  "repo": "example-user/calculator",
+  "path": "/home/user/calculator",
+  "vcs": "github",
+  "issue": 1,
+  "title": "Add a subtract function",
+  "url": "https://github.com/example-user/calculator/issues/1",
+  "branch": "factory/issue-1",
+  "base": "main",
+  "stage": "pr",
+  "state": "done",
+  "result": "ready",
+  "pr": "https://github.com/example-user/calculator/pull/2",
+  "pr_url": "https://github.com/example-user/calculator/pull/2",
+  "risk": "low",
+  "surfaces": [],
+  "agents": {
+    "reviewers": {
+      "code": "haiku"
+    }
+  },
+  "round": 1,
+  "round_limit": 3,
+  "reviews": {
+    "code": "PASS"
+  },
+  "started": "2026-10-22T00:01:00Z",
+  "updated": "2026-10-22T00:05:00Z",
+  "stages": {
+    "ingest": "2026-10-22T00:01:00Z",
+    "spec": "2026-10-22T00:01:30Z",
+    "build": "2026-10-22T00:02:00Z",
+    "gate": "2026-10-22T00:03:00Z",
+    "review": "2026-10-22T00:03:30Z",
+    "approve": "2026-10-22T00:04:00Z",
+    "pr": "2026-10-22T00:04:30Z"
+  },
+  "events": [
+    {
+      "at": "2026-10-22T00:01:00Z",
+      "stage": "ingest",
+      "text": "Picked #1 from 1 queued issue(s)"
+    },
+    {
+      "at": "2026-10-22T00:01:30Z",
+      "stage": "spec",
+      "text": "Spec written"
+    },
+    {
+      "at": "2026-10-22T00:03:00Z",
+      "stage": "gate",
+      "text": "Gate PASS in 0s (round 1)"
+    },
+    {
+      "at": "2026-10-22T00:04:00Z",
+      "stage": "approve",
+      "text": "APPROVE"
+    },
+    {
+      "at": "2026-10-22T00:04:30Z",
+      "stage": "pr",
+      "text": "Opened PR: https://github.com/example-user/calculator/pull/2"
+    }
+  ]
+}

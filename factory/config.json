@@ -1,0 +1,92 @@
+{
+  "max_rounds": 3,
+  "base_branch": "main",
+  "merge_method": "merge",
+  "vcs": "github",
+  "checks_timeout_seconds": 300,
+  "labels": {
+    "queue": "factory",
+    "needs_info": "factory:needs-info",
+    "needs_human": "factory:needs-human"
+  },
+  "routing": {
+    "low": {
+      "code": "haiku"
+    },
+    "medium": {
+      "code": "sonnet"
+    },
+    "high": {
+      "code": "sonnet"
+    }
+  },
+  "surface_reviewers": {
+    "ui": {
+      "ux": "sonnet",
+      "ui": "haiku"
+    },
+    "security": {
+      "security": "opus"
+    }
+  },
+  "protected_paths": [
+    "factory/checks.sh",
+    "factory/config.json"
+  ],
+  "ports": {
+    "base": 5100,
+    "step": 10
+  },
+  "prices_usd_per_mtok": {
+    "_comment": "API-equivalent prices for cost estimation in the dashboard. Update when your provider's rates change.",
+    "claude-opus-4-5": {
+      "input": 15.0,
+      "output": 75.0,
+      "cache_write_5m": 18.75,
+      "cache_write_1h": 30.0,
+      "cache_read": 1.5
+    },
+    "claude-sonnet-4-5": {
+      "input": 3.0,
+      "output": 15.0,
+      "cache_write_5m": 3.75,
+      "cache_write_1h": 6.0,
+      "cache_read": 0.3
+    },
+    "claude-haiku-4-5": {
+      "input": 0.8,
+      "output": 4.0,
+      "cache_write_5m": 1.0,
+      "cache_write_1h": 1.6,
+      "cache_read": 0.08
+    },
+    "gpt-4o": {
+      "input": 2.5,
+      "output": 10.0,
+      "cache_write_5m": 0.0,
+      "cache_write_1h": 0.0,
+      "cache_read": 1.25
+    },
+    "gpt-4o-mini": {
+      "input": 0.15,
+      "output": 0.6,
+      "cache_write_5m": 0.0,
+      "cache_write_1h": 0.0,
+      "cache_read": 0.075
+    },
+    "gemini-2.5-pro": {
+      "input": 1.25,
+      "output": 10.0,
+      "cache_write_5m": 0.0,
+      "cache_write_1h": 0.0,
+      "cache_read": 0.31
+    },
+    "gemini-2.5-flash": {
+      "input": 0.075,
+      "output": 0.3,
+      "cache_write_5m": 0.0,
+      "cache_write_1h": 0.0,
+      "cache_read": 0.018
+    }
+  }
+}

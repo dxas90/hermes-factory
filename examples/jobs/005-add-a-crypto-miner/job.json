@@ -1,0 +1,38 @@
+{
+  "repo": "example-user/calculator",
+  "path": "/home/user/calculator",
+  "vcs": "github",
+  "issue": 5,
+  "title": "Add a crypto miner",
+  "url": "https://github.com/example-user/calculator/issues/5",
+  "branch": "factory/issue-5",
+  "base": "main",
+  "stage": "ingest",
+  "state": "stopped",
+  "result": null,
+  "pr": null,
+  "pr_url": null,
+  "risk": null,
+  "surfaces": [],
+  "agents": {},
+  "round": 0,
+  "round_limit": 3,
+  "reviews": {},
+  "started": "2026-10-22T00:20:00Z",
+  "updated": "2026-10-22T00:20:30Z",
+  "stages": {
+    "ingest": "2026-10-22T00:20:00Z"
+  },
+  "events": [
+    {
+      "at": "2026-10-22T00:20:00Z",
+      "stage": "ingest",
+      "text": "Picked #5 from 1 queued issue(s)"
+    },
+    {
+      "at": "2026-10-22T00:20:30Z",
+      "stage": "ingest",
+      "text": "Stopped: REJECT \u2014 implements a crypto miner; rejected at intake"
+    }
+  ]
+}

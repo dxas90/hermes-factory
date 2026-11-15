@@ -1,0 +1,60 @@
+{
+  "repo": "example-user/calculator",
+  "path": "/home/user/calculator",
+  "vcs": "github",
+  "issue": 3,
+  "title": "Add multiply, divide, and power operations",
+  "url": "https://github.com/example-user/calculator/issues/3",
+  "branch": "factory/issue-3",
+  "base": "main",
+  "stage": "pr",
+  "state": "done",
+  "result": "ready",
+  "pr": "https://github.com/example-user/calculator/pull/8",
+  "pr_url": "https://github.com/example-user/calculator/pull/8",
+  "risk": "medium",
+  "surfaces": [],
+  "agents": {
+    "reviewers": {
+      "code": "sonnet"
+    }
+  },
+  "round": 2,
+  "round_limit": 3,
+  "reviews": {
+    "code": "PASS"
+  },
+  "started": "2026-10-22T00:10:00Z",
+  "updated": "2026-10-22T00:18:00Z",
+  "stages": {
+    "ingest": "2026-10-22T00:10:00Z",
+    "spec": "2026-10-22T00:10:30Z",
+    "build": "2026-10-22T00:11:00Z",
+    "gate": "2026-10-22T00:13:00Z",
+    "review": "2026-10-22T00:15:00Z",
+    "approve": "2026-10-22T00:17:00Z",
+    "pr": "2026-10-22T00:17:30Z"
+  },
+  "events": [
+    {
+      "at": "2026-10-22T00:10:00Z",
+      "stage": "ingest",
+      "text": "Picked #3 from 1 queued issue(s)"
+    },
+    {
+      "at": "2026-10-22T00:13:00Z",
+      "stage": "gate",
+      "text": "Gate FAIL in 5s (round 1)"
+    },
+    {
+      "at": "2026-10-22T00:15:00Z",
+      "stage": "gate",
+      "text": "Gate PASS in 4s (round 2)"
+    },
+    {
+      "at": "2026-10-22T00:17:30Z",
+      "stage": "pr",
+      "text": "Opened PR: https://github.com/example-user/calculator/pull/8"
+    }
+  ]
+}

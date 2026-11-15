@@ -1,0 +1,13 @@
+name: factory
+version: 1.0.0
+description: >-
+  Software Factory for Hermes. Drains GitHub/GitLab issues labeled `factory`
+  through a deterministic pipeline: intake, spec, build, gate, review, approve,
+  merge. Each pipeline stage is a delegate_task subagent routed to a configurable
+  model via the hermes-factory-router delegation plugin.
+  Supports GitHub (gh CLI) and GitLab (glab CLI).
+hermes_requires: '>=0.1.0,<2.0'
+author: Daniel Ramirez
+license: MIT
+source: github.com/dxas90/hermes-factory
+installed_at: ''

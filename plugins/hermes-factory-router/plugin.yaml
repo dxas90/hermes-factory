@@ -1,0 +1,12 @@
+name: hermes-factory-router
+version: 1.0.0
+description: >
+  Delegation provider for the Hermes Software Factory. Adds a `stage` parameter
+  to delegate_task that routes each pipeline stage (intake, spec, build,
+  review-code, review-security, review-ux, review-ui, approve) to a configurable
+  provider and model. Configure each stage under
+  delegation.backends.factory-router.stages.<stage> in config.yaml, mirroring
+  the auxiliary: provider/model/base_url/api_key/timeout pattern.
+author: Hermes Musketeers / Daniel Ramirez
+license: MIT
+kind: backend

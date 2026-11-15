@@ -1,0 +1,114 @@
+# Hermes skin: factory
+# Industrial pipeline aesthetic — dark forge background, molten amber highlights,
+# cyan conveyor belt for tool calls, forge-green for PASS, alarm-red for FAIL.
+
+name: factory
+description: "Software Factory — steel & amber on dark forge"
+
+colors:
+  # Base surface — dark steel (not pure black; easier on the eyes in long runs)
+  background: "#0d1117"
+
+  # Brand accent — molten amber: links, chevrons, focus rings, session labels
+  ui_accent:     "#f0a500"
+  banner_accent: "#f0a500"
+
+  # Tool call marker (the spinning ● during tool calls) — cyan conveyor
+  ui_tool: "#4dd0e1"
+
+  # Reasoning / thinking text — dimmed steel blue
+  ui_thinking: "#6b7a8d"
+
+  # Text hierarchy
+  banner_title:  "#e6edf3"   # headings — near-white steel
+  banner_text:   "#c9d1d9"   # body text
+  banner_dim:    "#484f58"   # muted / tree connectors / secondary info
+  ui_text:       "#c9d1d9"
+  ui_primary:    "#e6edf3"
+  ui_label:      "#4dd0e1"   # labels and field names — cyan
+
+  # Borders and gutters
+  banner_border:   "#30363d"
+  ui_border:       "#30363d"
+  response_border: "#f0a500"  # amber frame wraps every assistant response
+
+  # Semantic status
+  ui_ok:    "#3fb950"   # GATE: PASS, VERDICT: PASS — forge green
+  ui_warn:  "#d29922"   # warnings — dark amber (distinct from accent)
+  ui_error: "#f85149"   # GATE: FAIL, VERDICT: CHANGES, errors — alarm red
+
+  # CLI / TUI chrome
+  prompt:         "#c9d1d9"
+  input_rule:     "#f0a500"
+  session_label:  "#f0a500"
+  session_border: "#30363d"
+
+  # Status bar — operator console strip at the bottom
+  status_bar_bg:       "#161b22"
+  status_bar_text:     "#c9d1d9"
+  status_bar_good:     "#3fb950"
+  status_bar_warn:     "#d29922"
+  status_bar_bad:      "#f85149"
+  status_bar_critical: "#f85149"
+
+  # Code review diff colours
+  diff_added:        "#3fb950"
+  diff_removed:      "#f85149"
+  diff_added_word:   "#23d18b"
+  diff_removed_word: "#ff6b6b"
+
+  # Syntax highlighting — readable on dark forge
+  syntax_string:  "#a5d6ff"
+  syntax_number:  "#79c0ff"
+  syntax_keyword: "#ff7b72"
+  syntax_comment: "#6b7a8d"
+
+  # Completion menu
+  completion_menu_bg:         "#161b22"
+  completion_menu_current_bg: "#1f2937"
+  completion_menu_meta_bg:    "#0d1117"
+
+branding:
+  agent_name: "Factory"
+  prompt_symbol: "❯ "
+  welcome: "Hermes Software Factory — /factory run to drain the queue."
+  goodbye: "Factory session ended. State preserved in factory/jobs/."
+  response_label: " ☤ Factory "
+  help_header: "⚙ Factory Commands"
+
+spinner:
+  waiting_faces:
+    - "[ ⚙ ]"
+    - "[ ⛭ ]"
+    - "[ ⟳ ]"
+    - "[ ▷ ]"
+  thinking_faces:
+    - "[ ⚙ ]"
+    - "[ ⛭ ]"
+    - "[ ▶ ]"
+    - "[ ◈ ]"
+  thinking_verbs:
+    - "building"
+    - "routing"
+    - "gating"
+    - "reviewing"
+    - "approving"
+    - "merging"
+  wings:
+    - ["⟦⚙", "⚙⟧"]
+    - ["⟦●", "●⟧"]
+    - ["⟦▷", "◁⟧"]
+
+tool_prefix: "┊"
+tool_emojis:
+  terminal:      "⚙"
+  write_file:    "📝"
+  read_file:     "📖"
+  patch:         "🔧"
+  search_files:  "🔎"
+  web_search:    "🔍"
+  web_extract:   "🌐"
+  delegate_task: "🏭"
+  vision_analyze: "👁"
+
+banner_logo: "[bold #f0a500]█████  ███   ████ █████  ███  ████  █   █\n█     █   █ █       █   █   █ █   █ █   █\n████  █████ █       █   █   █ ████   ███ \n█     █   █ █       █   █   █ █  █    █  \n█     █   █  ████   █    ███  █   █   █  [/]\n[#4dd0e1]issues in — merged PRs out[/]  [#484f58]github.com/dxas90/hermes-factory[/]"

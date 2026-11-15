@@ -1,0 +1,46 @@
+# Credentials & secrets — NEVER commit
+auth.json
+.env
+
+# Runtime databases & state
+state.db
+state.db-shm
+state.db-wal
+gateway.lock
+gateway_state.json
+processes.json
+auth.lock
+
+# User data — NEVER commit
+memories/
+sessions/
+logs/
+plans/
+workspace/
+home/
+
+# Factory runtime state — local only
+factory/jobs/
+.worktrees/
+
+# Caches & generated artifacts
+cache/
+image_cache/
+audio_cache/
+__pycache__/
+*.pyc
+*.pyo
+
+# Backups
+backups/
+sandboxes/
+checkpoints/
+
+# Runtime files
+.hermes_history
+.hermes.lock
+.mcp-discovery.lock
+
+# Override global gitignore: factory/bin/ must be committed
+!factory/bin/
+!factory/bin/*
