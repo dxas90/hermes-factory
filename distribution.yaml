@@ -6,7 +6,7 @@ description: >-
   merge. Each pipeline stage is a delegate_task subagent routed to a configurable
   model via the hermes-factory-router delegation plugin.
   Supports GitHub (gh CLI) and GitLab (glab CLI).
-hermes_requires: '>=0.1.0,<2.0'
+hermes_requires: '>=0.1.0'
 author: Daniel Ramirez
 license: MIT
 source: github.com/dxas90/hermes-factory
