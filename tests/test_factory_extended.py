@@ -2158,3 +2158,19 @@ class TestPass2ReviewerFindings(unittest.TestCase):
         req = dist.get("hermes_requires", "")
         self.assertIn("<", req,
                       f"hermes_requires={req!r} has no upper bound")
+
+    def test_skill_script_matches_bin(self):
+        """The installed skill copy of factory.py must match factory/bin/.
+
+        The orchestrator runs the skill's scripts/factory.py; the test
+        suite exercises factory/bin/factory.py.  If the two drift, the
+        shipped pipeline silently runs different code than what is tested.
+        """
+        root = Path(__file__).resolve().parents[1]
+        bin_src = (root / "factory/bin/factory.py").read_text()
+        skill_src = (root / "skills/software-development/factory/"
+                     "scripts/factory.py").read_text()
+        self.assertEqual(bin_src, skill_src,
+                         "skills/.../factory/scripts/factory.py is out of "
+                         "sync with factory/bin/factory.py — copy bin "
+                         "over the skill script.")

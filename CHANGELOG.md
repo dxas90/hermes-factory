@@ -23,6 +23,11 @@
   (`uv run --no-project --with pytest,pyyaml python -m pytest tests/ -q`)
   instead of the `exit 1` stub.
 - `distribution.yaml` bounds the Hermes requirement to `>=0.1.0,<2`.
+- Re-synced `skills/.../factory/scripts/factory.py` with
+  `factory/bin/factory.py` (the two had drifted when the gate fixes went
+  into `bin` only — the orchestrator runs the skill copy).
+- New test `test_skill_script_matches_bin` fails the suite if the skill
+  script and `factory/bin/factory.py` ever drift again.
 
 ## 1.3.0 — 2026-11-15
 

@@ -427,8 +427,24 @@ def routing_for(config, risk, surfaces):
 
 
 def protected_paths_check(repo_path, config, base_branch):
-    """Return list of protected files that were modified. Empty = clean."""
-    patterns = config.get("protected_paths", [])
+    """Return list of protected files that were modified. Empty = clean.
+
+    The protected list is read from the BASE version of factory/config.json
+    (origin/<base_branch>), not the job branch's working tree.  Otherwise a
+    job branch could disable protection by rewriting the config file that
+    defines it, and the diff would show that very rewrite as clean.
+    Falls back to the working-tree config if the base file is unavailable.
+    """
+    base_config = config
+    try:
+        base_raw = cli_run("git", "show",
+                           f"origin/{base_branch}:factory/config.json",
+                           cwd=repo_path, check=False)
+        if base_raw.strip():
+            base_config = json.loads(base_raw)
+    except (ValueError, SystemExit):
+        pass  # base config unavailable — keep the working-tree config
+    patterns = base_config.get("protected_paths", [])
     if not patterns:
         return []
     diff = cli_run("git", "diff", "--name-status",
@@ -666,7 +682,11 @@ def route_cmd(args):
     job = require_active(args.repo)
     config = load_config(job["path"])
     risk     = args.risk
-    surfaces = [s.strip() for s in (args.surfaces or "").split(",") if s.strip()]
+    raw_surfaces = args.surfaces or ""
+    if isinstance(raw_surfaces, (list, tuple)):
+        surfaces = [str(s).strip() for s in raw_surfaces if str(s).strip()]
+    else:
+        surfaces = [s.strip() for s in str(raw_surfaces).split(",") if s.strip()]
 
     job["risk"]     = risk
     job["surfaces"] = surfaces
@@ -685,6 +705,13 @@ def gate_cmd(args):
     path   = job["path"]
     config = load_config(path)
 
+    def _to_gate():
+        # Record that the gate ran: build -> gate, so the orchestrator can
+        # continue from there (PASS: stage review; FAIL: round-next).
+        if job["stage"] == "build":
+            job["stage"] = "gate"
+            job["stages"]["gate"] = now()
+
     # Stage guard: gate only makes sense while building or re-checking
     if job["stage"] not in ("build", "gate"):
         raise SystemExit(
@@ -694,6 +721,7 @@ def gate_cmd(args):
     # Protected path check
     protected = protected_paths_check(path, config, job["base"])
     if protected:
+        _to_gate()
         msg = f"GATE: FAIL — protected paths modified: {', '.join(protected)}"
         log(job, msg)
         print(msg)
@@ -712,6 +740,7 @@ def gate_cmd(args):
                            timeout=checks_timeout)
     except subprocess.TimeoutExpired:
         elapsed = int(time.monotonic() - start_t)
+        _to_gate()
         msg = f"GATE: FAIL — checks.sh timed out after {elapsed}s"
         log(job, msg)
         print(msg)
@@ -738,6 +767,7 @@ def gate_cmd(args):
     (rnd_dir / "checks.md").write_text(md)
     (rnd_dir / "checks.log").write_text(out_text)
 
+    _to_gate()
     log(job, f"Gate {verdict} in {elapsed}s (round {rnd})")
     print(f"GATE: {verdict}  commit={commit[:7]}  {elapsed}s")
     if verdict == "FAIL":
@@ -834,16 +864,17 @@ def resume(args):
 def round_next_cmd(args):
     """Increment the round counter and reset stage to 'build'.
 
-    Called by the orchestrator after review produces CHANGES so the builder
-    can start another pass.  Raises if the job is already at max rounds,
-    or if the current stage is not 'review' or 'approve' (which would silently
-    skip the spec stage for all subsequent rounds).
+    Called by the orchestrator when a round ends without a PASS: after a
+    gate FAIL (job at 'gate') or when review produces CHANGES (job at
+    'review' or 'approve').  Raises if the job is already at max rounds,
+    or if the current stage predates the gate — a new round must never
+    start before spec and the first gate have run.
     """
     job = require_active(args.repo)
-    if job["stage"] not in ("review", "approve"):
+    if job["stage"] not in ("gate", "review", "approve"):
         raise SystemExit(
             f"#{job['issue']} is at {job['stage']}; round-next is only valid "
-            "after review or approve. Use it when review produces CHANGES.")
+            "after the gate (FAIL) or after review/approve (CHANGES).")
     if job["round"] >= job["round_limit"]:
         raise SystemExit(
             f"#{job['issue']} is already at round {job['round']}/{job['round_limit']}. "
@@ -971,19 +1002,25 @@ def dispatch(args):
 # ── precheck / install-precheck ───────────────────────────────────────────────
 
 def precheck(args):
-    """Cron pre-check: print wakeAgent JSON. True only when work is waiting."""
+    """Cron pre-check: print wakeAgent JSON. True only when work is waiting.
+
+    stdout carries ONLY the JSON object (the cron harness parses it);
+    human-readable status goes to stderr.
+    """
     repo  = load_repo(args.repo)
     busy  = active_job(repo["repo"])
     if busy:
-        print(f"{repo['repo']}: #{busy['issue']} is already at {busy['stage']}.")
+        print(f"{repo['repo']}: #{busy['issue']} is already at {busy['stage']}.",
+              file=sys.stderr)
         wake = False
     else:
         waiting = check_queue(repo)
         if waiting:
             print(f"{repo['repo']}: {len(waiting)} issue(s) labeled '{LABEL}'. "
-                  f"Next: #{waiting[0]['number']}.")
+                  f"Next: #{waiting[0]['number']}.", file=sys.stderr)
         else:
-            print(f"{repo['repo']}: no issues labeled '{LABEL}'.")
+            print(f"{repo['repo']}: no issues labeled '{LABEL}'.",
+                  file=sys.stderr)
         wake = bool(waiting)
     print(json.dumps({"wakeAgent": wake}))
 
