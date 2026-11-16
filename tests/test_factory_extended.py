@@ -2133,8 +2133,10 @@ class TestPass2ReviewerFindings(unittest.TestCase):
 
     def test_skill_md_job_path_uses_colon_separator(self):
         """SKILL.md must reference OWNER:REPO--N not OWNER--REPO--N."""
-        skill = Path(__file__).resolve().parents[1] / \
-                "skills/software-development/hermes-factory/SKILL.md"
+        root = Path(__file__).resolve().parents[1]
+        skill = root / "skills/software-development/factory/SKILL.md"
+        if not skill.exists():
+            skill = root / "skills/software-development/hermes-factory/SKILL.md"
         content = skill.read_text()
         self.assertNotIn("OWNER--REPO--N", content,
                          "SKILL.md still has stale OWNER--REPO--N path format")
