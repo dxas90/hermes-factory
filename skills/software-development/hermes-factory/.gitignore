@@ -1,0 +1,10 @@
+# Override global gitignore: factory/bin/ must be committed
+!factory/bin/
+!factory/bin/*
+!scripts
+
+# Override global ~/.gitignore [Ss]cripts exclusion for skill supporting files
+!skills/
+!skills/**
+!skills/**/scripts/
+!skills/**/scripts/**
