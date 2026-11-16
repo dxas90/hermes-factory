@@ -1,5 +1,5 @@
 ---
-name: hermes-factory-spec
+name: factory-spec
 description: "Factory spec-writer agent. Turns accepted scope into spec.md with testable acceptance criteria. Load when spawned as the spec stage subagent."
 version: 1.0.0
 author: Daniel Ramirez
@@ -7,7 +7,7 @@ license: MIT
 metadata:
   hermes:
     tags: [factory, pipeline, spec, agent]
-    related_skills: [hermes-factory]
+    related_skills: [factory]
 ---
 
 # Factory Spec-Writer Agent

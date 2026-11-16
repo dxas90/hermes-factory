@@ -63,7 +63,7 @@ plugins/ requires:
    features, major for breaking changes).
 2. A new entry in `CHANGELOG.md` under the new version heading.
 
-**Agent instruction skills** (`hermes-factory-*`) contain the full agent prompt.
+**Agent instruction skills** (`factory-*`) contain the full agent prompt.
 When changing pipeline behaviour, update the corresponding SKILL.md — the skill
 is what subagents load at runtime.
 
@@ -83,7 +83,7 @@ Load the updated skill in a live session:
 
 ```
 hermes -p factory chat
-> /skill hermes-factory
+> /skill factory
 ```
 
 Run a one-shot smoke test:
@@ -97,21 +97,21 @@ hermes -p factory chat -q "What pipeline stages are configured? List them."
 | Path | Purpose |
 |------|---------|
 | `factory/bin/factory.py` | State machine + VCS abstraction. Only writer of job state. |
-| `plugins/hermes-factory-router/` | Delegation provider. Routes `delegate_task(stage=X)`. |
-| `skills/software-development/hermes-factory/` | Orchestrator. Runs `/factory run`. |
-| `skills/software-development/hermes-factory-*/` | One agent prompt per pipeline stage. |
+| `plugins/factory-router/` | Delegation provider. Routes `delegate_task(stage=X)`. |
+| `skills/software-development/factory/` | Orchestrator. Runs `/factory run`. |
+| `skills/software-development/factory-*/` | One agent prompt per pipeline stage. |
 | `factory/config.json` | `"vcs"` key switches GitHub ↔ GitLab. |
 | `config.yaml` | Clean installer template — no credentials, no runtime state. |
 | `tests/` | Tests for `factory.py`. Run with `python3 -m unittest discover -s tests`. |
 
 ## Adding a new pipeline stage
 
-1. Create `skills/software-development/hermes-factory-<stage>/SKILL.md` with
+1. Create `skills/software-development/factory-<stage>/SKILL.md` with
    the full agent prompt, following the frontmatter rules.
-2. Add `<stage>` to `_ALL_STAGES` in `plugins/hermes-factory-router/__init__.py`.
+2. Add `<stage>` to `_ALL_STAGES` in `plugins/factory-router/__init__.py`.
 3. Add a `<stage>` entry under `delegation.backends.factory-router.stages`
    in `config.yaml` (provider, model, base_url, api_key, timeout).
-4. Update `hermes-factory` orchestrator skill to dispatch the new stage.
+4. Update `factory` orchestrator skill to dispatch the new stage.
 5. Add a `stage_cmd` call to the relevant part of the pipeline in `factory.py`
    if the new stage needs a strict position in the order.
 6. Bump `distribution.yaml` version and update `CHANGELOG.md`.

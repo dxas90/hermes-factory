@@ -155,7 +155,7 @@ Entries: Added / Changed / Fixed / Removed
   Branch and all work are preserved.
 - `routing_for()` fixed: was inverting the dict (`{model: reviewer_type}`
   instead of `{reviewer_type: model}`). Would have caused the orchestrator
-  to load `hermes-factory-review-haiku` instead of `hermes-factory-review-code`.
+  to load `factory-review-haiku` instead of `factory-review-code`.
 - VCS abstraction built into `factory.py` — GitHub (`gh`) and GitLab (`glab`)
   supported. Switch with `"vcs"` in `factory/config.json`.
 - 358 tests for `factory.py` across 6 test files.
@@ -172,15 +172,15 @@ Entries: Added / Changed / Fixed / Removed
 
 ### Added
 
-- `hermes-factory` orchestrator skill — full pipeline loop using `delegate_task`
+- `factory` orchestrator skill — full pipeline loop using `delegate_task`
   with the `stage` routing parameter.
-- `hermes-factory-router` delegation provider plugin — adds `stage` enum to
+- `factory-router` delegation provider plugin — adds `stage` enum to
   `delegate_task`; maps each stage to a configurable provider/model/timeout.
 - Eight agent instruction skills (full agent prompts):
-  `hermes-factory-intake`, `hermes-factory-spec`, `hermes-factory-build`,
-  `hermes-factory-review-code`, `hermes-factory-review-security`,
-  `hermes-factory-review-ux`, `hermes-factory-review-ui`,
-  `hermes-factory-approve`.
+  `factory-intake`, `factory-spec`, `factory-build`,
+  `factory-review-code`, `factory-review-security`,
+  `factory-review-ux`, `factory-review-ui`,
+  `factory-approve`.
 - `factory/dashboard.html` — job board with per-job cost, timing, and file explorer.
 - `factory/config.json` — routing tables, VCS backend, cost prices.
 - `skins/factory.yaml` — dark forge + molten amber theme.
