@@ -44,3 +44,9 @@ checkpoints/
 # Override global gitignore: factory/bin/ must be committed
 !factory/bin/
 !factory/bin/*
+
+# Override global ~/.gitignore [Ss]cripts exclusion for skill supporting files
+!skills/
+!skills/**
+!skills/**/scripts/
+!skills/**/scripts/**
