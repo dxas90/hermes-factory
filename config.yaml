@@ -11,16 +11,16 @@
 #   5. Run: hermes -p factory chat  then  /factory run
 
 model:
-  default: ''          # e.g. claude-opus-4-5  |  gpt-4o  |  gemini-2.5-pro
-  provider: ''         # e.g. anthropic  |  openrouter  |  gemini
+  default: claude-sonnet-4-5
+  provider: anthropic
 
 # ── Delegation: subagent routing for the factory pipeline ─────────────────────
 # The hermes-factory-router plugin adds a `stage` parameter to delegate_task.
 # Each stage mirrors the `auxiliary:` pattern: provider / model / base_url / api_key / timeout.
 # Leave provider+model blank on a stage to inherit delegation.model / delegation.provider.
 delegation:
-  model: ''            # fallback model for stages with no explicit model
-  provider: ''         # fallback provider for stages with no explicit provider
+  model: claude-sonnet-4-5   # fallback model for stages with no explicit model
+  provider: anthropic            # fallback provider for stages with no explicit provider
   base_url: ''
   api_key: ''
   api_mode: ''
@@ -38,50 +38,50 @@ delegation:
       # Omit provider+model to fall through to delegation.provider / delegation.model above.
       stages:
         intake:
-          provider: ''   # recommended: a fast/cheap model (haiku, flash, gpt-4o-mini)
-          model: ''
+          provider: anthropic   # fast/cheap model
+          model: claude-haiku-4-5
           base_url: ''
           api_key: ''
           timeout: 120
         spec:
-          provider: ''   # recommended: a capable reasoning model (opus, sonnet, gpt-4o)
-          model: ''
+          provider: anthropic   # capable reasoning model
+          model: claude-sonnet-4-5
           base_url: ''
           api_key: ''
           timeout: 300
         build:
-          provider: ''   # recommended: best available — this writes the actual code
-          model: ''
+          provider: anthropic   # best available — writes the actual code
+          model: claude-sonnet-4-5
           base_url: ''
           api_key: ''
           timeout: 900
         review-code:
-          provider: ''   # recommended: fast model for low risk, capable for high risk
-          model: ''
+          provider: anthropic   # fast model for low risk
+          model: claude-haiku-4-5
           base_url: ''
           api_key: ''
           timeout: 120
         review-security:
-          provider: ''   # recommended: capable reasoning model — security is high-stakes
-          model: ''
+          provider: anthropic   # capable reasoning model — security is high-stakes
+          model: claude-sonnet-4-5
           base_url: ''
           api_key: ''
           timeout: 180
         review-ux:
-          provider: ''   # recommended: mid-tier model with vision for page screenshots
-          model: ''
+          provider: anthropic   # mid-tier with vision
+          model: claude-sonnet-4-5
           base_url: ''
           api_key: ''
           timeout: 120
         review-ui:
-          provider: ''   # recommended: fast model; visual consistency is pattern matching
-          model: ''
+          provider: anthropic   # fast model; visual consistency is pattern matching
+          model: claude-haiku-4-5
           base_url: ''
           api_key: ''
           timeout: 90
         approve:
-          provider: ''   # recommended: best available — APPROVE triggers an auto-merge
-          model: ''
+          provider: anthropic   # best available — APPROVE triggers auto-merge
+          model: claude-sonnet-4-5
           base_url: ''
           api_key: ''
           timeout: 180
