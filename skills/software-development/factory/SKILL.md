@@ -56,12 +56,18 @@ When it exits with an error, stop and report the error. Do not work around it.
    - Detects existing clones automatically, or clones into $HERMES_HOME/work/
    - Verifies push access, creates the three factory labels
 3. Fill in `factory/checks.sh` in the target repo with its test/lint/build commands
-4. Label an issue `factory` on the repo
+4. Label issues with `factory` on GitHub/GitLab to queue them.
+   Only issues with this exact label are picked up. Any issue without it is ignored.
 5. Run: `/factory run OWNER/REPO`
 
 ## The pipeline
 
-    labeled issues
+Only issues carrying the **`factory` label** enter the pipeline.
+The factory never touches unlabeled issues or issues with other labels.
+To queue an issue: apply the `factory` label on GitHub/GitLab.
+To dequeue/skip an issue: remove the `factory` label before the next run.
+
+    issues labeled `factory`
         |
         v
     intake    (delegate_task stage=intake)  ACCEPT / NEEDS-INFO / REJECT
@@ -112,7 +118,8 @@ Read every step output before continuing. Never run dispatch from a chat session
     # On STARTED: prints clone path, branch, job folder, issue JSON
 
 - BUSY    -> another job is already active. Say so and stop. Do NOT cancel it.
-- NO WORK -> queue is empty. Say so and stop. Do NOT look for more work.
+- NO WORK -> queue is empty (no issues labeled `factory`). Say so and stop.
+             Do NOT search for other issues or work around the label requirement.
 - STARTED -> proceed with steps 2–8 for this one issue only.
 
 `start` creates the job branch from `origin/<base>` (fetches first). The branch
