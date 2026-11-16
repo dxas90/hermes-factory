@@ -1,3 +1,29 @@
+## Unreleased (2026-11-16)
+
+### Fixed
+
+- `gate` now advances the job from `build` to `gate` after every verdict
+  (PASS, FAIL, protected-path, timeout), so the documented flow works:
+  PASS → `stage review`, FAIL → `round-next` starts the next build round.
+  Previously the job was stranded at `build` and both follow-ups raised.
+- `round-next` is now valid from `gate` (gate FAIL) in addition to
+  `review` and `approve` (CHANGES).
+- `protected_paths_check` reads the protected-paths list from the BASE
+  version of `factory/config.json` instead of the job branch's working
+  tree — a job branch can no longer disable protection by rewriting the
+  config file that defines it.
+- `precheck` now prints only JSON on stdout; the human-readable status
+  line goes to stderr, matching what the cron harness parses.
+- `route` accepts `surfaces` as a list/tuple as well as a comma-separated
+  string.
+
+### Changed
+
+- `factory/checks.sh` now runs the real test suite
+  (`uv run --no-project --with pytest,pyyaml python -m pytest tests/ -q`)
+  instead of the `exit 1` stub.
+- `distribution.yaml` bounds the Hermes requirement to `>=0.1.0,<2`.
+
 ## 1.3.0 — 2026-11-15
 
 ### Added

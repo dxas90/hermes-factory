@@ -5,7 +5,8 @@
 # the working directory. Keep it fast, deterministic and non-interactive: no
 # watch modes, no prompts, nothing that rewrites files.
 #
-# INSTALL.md replaces the line below with this project's real commands, e.g.:
+# For the hermes-factory repo itself the checks are its own test suite.
+# Other repos: replace the last line with this project's real commands, e.g.:
 #
 #   npm ci --prefer-offline
 #   npm run lint
@@ -14,5 +15,11 @@
 #   npm run build
 set -euo pipefail
 
-echo "factory/checks.sh has no checks yet. Add this repo's test, lint, typecheck and build commands." >&2
-exit 1
+cd "$(git rev-parse --show-toplevel)"
+
+if ! command -v uv >/dev/null 2>&1; then
+  echo "ERROR: uv not found on PATH (needed to run the test suite)" >&2
+  exit 1
+fi
+
+uv run --no-project --with pytest,pyyaml python -m pytest tests/ -q
