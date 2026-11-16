@@ -911,7 +911,7 @@ class TestOpenPr(unittest.TestCase):
                         return "1"
                     return ""
                 pr_calls = []
-                def fake_pr(slug, vcs, base, branch, title, body_file, draft):
+                def fake_pr(slug, vcs, base, branch, title, body_file, draft, config=None):
                     pr_calls.append(draft)
                     return "https://github.com/o/r/pull/99"
                 with patch.object(F, "cli_run", side_effect=fake_cli),\
@@ -942,7 +942,7 @@ class TestOpenPr(unittest.TestCase):
                 body_path = Path(tmp) / "pr-body.md"
                 body_path.write_text("My body\n")
                 captured = {}
-                def fake_pr(slug, vcs, base, branch, title, body_file, draft):
+                def fake_pr(slug, vcs, base, branch, title, body_file, draft, config=None):
                     captured["body"] = Path(body_file).read_text()
                     return "https://github.com/o/r/pull/1"
                 with patch.object(F, "cli_run", side_effect=fake_cli),\

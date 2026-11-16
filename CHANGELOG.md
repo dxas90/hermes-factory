@@ -1,3 +1,40 @@
+## 1.3.0 — 2026-11-15
+
+### Added
+
+- **Gitea / Forgejo VCS backend** (`"vcs": "gitea"`): full VCS abstraction via
+  the `gt` CLI (Gitea CLI, v1.2+). Forgejo instances are compatible — gt works
+  against Forgejo too. Covers all factory operations:
+  - `repo_view`: `gt repo view --json`
+  - `issue_list_labeled`: `gt issue list --json number,title`
+  - `issue_view_full`: `gt issue view --json number,title,body,url,author`
+  - `issue_comment`: `gt issue comment --body`
+  - `label_create`: `gt label create --color #RRGGBB --force`
+  - `pr_create`: `gt pr create --yes [--draft]`
+  - `origin_slug`: host-aware regex matching any Gitea/Forgejo instance URL
+- `_gt_host()` helper: resolves the Gitea instance URL from `GITEA_CLI_HOST`
+  env, `GITEA_INSTANCE_URL` env, or `gitea_host` in `factory/config.json`.
+- `gitea_host` key in `factory/config.json` (empty default).
+- `--vcs gitea` choice added to `factory.py add` argparser.
+- 41 tests for the Gitea backend in `tests/test_factory_gitea.py`.
+- `gitea` skill installed: `skills/software-development/gitea/` with 8
+  reference files covering auth, PRs, issues, reviews, repo management, API
+  cheatsheet, CI troubleshooting, and bulk merge. Covers both `gt` porcelain
+  and raw `curl /api/v1/` fallbacks. Works for Gitea and Forgejo instances.
+
+### Changed
+
+- `_cli()`, `_vcs()`, `origin_slug()`, `repo_view()`, `issue_list_labeled()`,
+  `issue_view_full()`, `issue_comment()`, `label_create()`, `pr_create()`,
+  `add()`, `check_queue()` — all accept `vcs="gitea"` and route to `gt`.
+- `origin_slug()` gains a `config` parameter. For Gitea, host verification
+  prevents false-positive matches against github.com/gitlab.com remotes when
+  a Gitea host is configured.
+- `check_queue()` now loads and passes `config` to `issue_list_labeled()` so
+  the `gitea_host` key reaches the VCS call.
+
+---
+
 # Changelog
 
 All notable changes to the Hermes Software Factory profile distribution.

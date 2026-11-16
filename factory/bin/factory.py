@@ -13,8 +13,11 @@ State lives in $HERMES_HOME/factory/ — separate from any repository:
   jobs/<owner>:<repo>--<N>/job.json  one record per issue, plus stage files
   <owner>:<repo>.dispatch.lock       prevents overlapping dispatchers
 
-VCS backends: "github" (gh CLI, default) or "gitlab" (glab CLI).
+VCS backends: "github" (gh CLI, default), "gitlab" (glab CLI), or
+"gitea" / "forgejo" (gt CLI, self-hosted).
 Set "vcs" in factory/config.json inside the target repository.
+For Gitea/Forgejo also set "gitea_host" (e.g. "https://gitea.example.com")
+or export GITEA_CLI_HOST / GITEA_INSTANCE_URL.
 
 Commands
 --------
@@ -159,7 +162,7 @@ def log(job, text):
 # ── VCS abstraction ───────────────────────────────────────────────────────────
 
 def _vcs(repo_or_slug):
-    """Return the vcs backend ('github' or 'gitlab') for a repo record or slug."""
+    """Return the vcs backend ('github', 'gitlab', or 'gitea') for a repo record or slug."""
     if isinstance(repo_or_slug, dict):
         return repo_or_slug.get("vcs", "github")
     # Try to read from the repo's factory/config.json if it exists
@@ -171,7 +174,20 @@ def _vcs(repo_or_slug):
 
 
 def _cli(vcs):
-    return "glab" if vcs == "gitlab" else "gh"
+    if vcs == "gitlab":
+        return "glab"
+    if vcs == "gitea":
+        return "gt"
+    return "gh"
+
+
+def _gt_host(config_or_path=None):
+    """Return the Gitea host URL from factory/config.json or env."""
+    host = os.environ.get("GITEA_CLI_HOST") or os.environ.get("GITEA_INSTANCE_URL", "")
+    if not host and config_or_path:
+        cfg = config_or_path if isinstance(config_or_path, dict) else load_config(config_or_path)
+        host = cfg.get("gitea_host", "")
+    return host.rstrip("/")
 
 
 def cli_run(*args, cwd=None, check=True):
@@ -191,19 +207,34 @@ def git_push(path, *args):
     return cli_run("env", "GIT_TERMINAL_PROMPT=0", "git", "push", *args, cwd=path)
 
 
-def origin_slug(path, vcs="github"):
-    """The OWNER/REPO of a clone's origin remote, or None."""
+def origin_slug(path, vcs="github", config=None):
+    """The OWNER/REPO of a clone's origin remote, or None.
+
+    For gitea/forgejo (self-hosted), the host is read from config or env
+    so the regex matches any instance URL, not just a fixed domain.
+    """
     r = subprocess.run(["git", "-C", str(path), "remote", "get-url", "origin"],
                        text=True, capture_output=True, stdin=subprocess.DEVNULL)
     url = r.stdout.strip()
     if vcs == "gitlab":
         m = re.search(r"gitlab\.com[:/]([\w.\-]+/[\w.\-]+?)(?:\.git)?/?$", url)
+    elif vcs == "gitea":
+        # Self-hosted: match any host. Extract last two path segments (owner/repo).
+        # Handles https://host/owner/repo.git and git@host:owner/repo.git
+        m = re.search(r"[:/]([\w.\-]+/[\w.\-]+?)(?:\.git)?/?$", url)
+        # If the host is known, verify the URL actually contains it to avoid
+        # false-positive matches against github.com or gitlab.com remotes.
+        host = _gt_host(config)
+        if m and host:
+            host_plain = re.sub(r"^https?://", "", host).rstrip("/")
+            if host_plain not in url:
+                return None
     else:
         m = re.search(r"github\.com[:/]([\w.\-]+/[\w.\-]+?)(?:\.git)?/?$", url)
     return m.group(1) if m else None
 
 
-def repo_view(slug, vcs):
+def repo_view(slug, vcs, config=None):
     """Return {nameWithOwner, viewerPermission, hasIssuesEnabled, isArchived,
     defaultBranchRef.name} for a repository."""
     if vcs == "gitlab":
@@ -218,26 +249,50 @@ def repo_view(slug, vcs):
             "isArchived": raw.get("archived", False),
             "defaultBranchRef": {"name": raw.get("default_branch", "main")},
         }
+    elif vcs == "gitea":
+        # gt repo view --json returns GitHub-compatible JSON fields
+        host = _gt_host(config)
+        cmd = ["gt", "repo", "view", slug,
+               "--json", "nameWithOwner,defaultBranchRef,isArchived"]
+        if host:
+            cmd += ["--host", host]
+        raw = json.loads(cli_run(*cmd))
+        return {
+            "nameWithOwner": raw.get("nameWithOwner", slug),
+            "viewerPermission": "WRITE",  # validated by push dry-run
+            "hasIssuesEnabled": True,
+            "isArchived": raw.get("isArchived", False),
+            "defaultBranchRef": raw.get("defaultBranchRef", {"name": "main"}),
+        }
     else:
         return json.loads(cli_run(
             "gh", "repo", "view", slug, "--json",
             "nameWithOwner,viewerPermission,hasIssuesEnabled,isArchived,defaultBranchRef"))
 
 
-def issue_list_labeled(slug, vcs, label, limit=100):
+def issue_list_labeled(slug, vcs, label, limit=100, config=None):
     """Return [{number, title}] for open issues with the given label."""
     if vcs == "gitlab":
         raw = json.loads(cli_run(
             "glab", "issue", "list", "--repo", slug,
             "--label", label, "--per-page", str(limit), "--output", "json"))
         return [{"number": i["iid"], "title": i["title"]} for i in (raw or [])]
+    elif vcs == "gitea":
+        # gt issue list mirrors gh: --json number,title, --label, --state, --limit
+        host = _gt_host(config)
+        cmd = ["gt", "issue", "list", "--repo", slug,
+               "--label", label, "--state", "open",
+               "--json", "number,title", "--limit", str(limit)]
+        if host:
+            cmd += ["--host", host]
+        return json.loads(cli_run(*cmd))
     else:
         return json.loads(cli_run(
             "gh", "issue", "list", "--repo", slug, "--label", label,
             "--state", "open", "--json", "number,title", "--limit", str(limit)))
 
 
-def issue_view_full(slug, vcs, number):
+def issue_view_full(slug, vcs, number, config=None):
     """Return {number, title, body, url, author{login}}."""
     if vcs == "gitlab":
         raw = json.loads(cli_run(
@@ -249,31 +304,55 @@ def issue_view_full(slug, vcs, number):
             "url": raw.get("web_url", ""),
             "author": {"login": raw.get("author", {}).get("username", "")},
         }
+    elif vcs == "gitea":
+        host = _gt_host(config)
+        cmd = ["gt", "issue", "view", str(number), "--repo", slug,
+               "--json", "number,title,body,url,author"]
+        if host:
+            cmd += ["--host", host]
+        return json.loads(cli_run(*cmd))
     else:
         return json.loads(cli_run(
             "gh", "issue", "view", str(number), "--repo", slug,
             "--json", "number,title,body,url,author"))
 
 
-def issue_comment(slug, vcs, number, body):
+def issue_comment(slug, vcs, number, body, config=None):
     if vcs == "gitlab":
         cli_run("glab", "issue", "note", str(number), "--repo", slug,
                 "--message", body)
+    elif vcs == "gitea":
+        host = _gt_host(config)
+        cmd = ["gt", "issue", "comment", str(number), "--repo", slug, "--body", body]
+        if host:
+            cmd += ["--host", host]
+        cli_run(*cmd)
     else:
         cli_run("gh", "issue", "comment", str(number), "--repo", slug,
                 "--body", body)
 
 
-def label_create(slug, vcs, name, color, description):
+def label_create(slug, vcs, name, color, description, config=None):
     if vcs == "gitlab":
         cli_run("glab", "label", "create", name, "--repo", slug,
                 "--color", f"#{color}", "--force")
+    elif vcs == "gitea":
+        # gt label create --color requires the hash prefix (like glab)
+        host = _gt_host(config)
+        cmd = ["gt", "label", "create", "--repo", slug,
+               "--name", name, "--color", f"#{color}", "--force"]
+        if host:
+            cmd += ["--host", host]
+        try:
+            cli_run(*cmd)
+        except SystemExit:
+            pass  # label already exists
     else:
         cli_run("gh", "label", "create", name, "--repo", slug,
                 "--color", color, "--description", description, "--force")
 
 
-def pr_create(slug, vcs, base, branch, title, body_file, draft):
+def pr_create(slug, vcs, base, branch, title, body_file, draft, config=None):
     """Open a PR/MR and return its URL."""
     if vcs == "gitlab":
         args = ["glab", "mr", "create",
@@ -288,6 +367,21 @@ def pr_create(slug, vcs, base, branch, title, body_file, draft):
         out = cli_run(*args)
         # glab mr create prints the MR URL on the last line
         return out.splitlines()[-1]
+    elif vcs == "gitea":
+        # gt pr create mirrors gh; use --yes to suppress interactive confirmation
+        host = _gt_host(config)
+        args = ["gt", "pr", "create",
+                "--repo", slug,
+                "--base", base,
+                "--head", branch,
+                "--title", title,
+                "--body-file", body_file,
+                "--yes"]
+        if draft:
+            args.append("--draft")
+        if host:
+            args += ["--host", host]
+        return cli_run(*args).splitlines()[-1]
     else:
         args = ["gh", "pr", "create",
                 "--repo", slug,
@@ -383,7 +477,8 @@ def find_clones(slug, vcs="github"):
 def check_queue(repo):
     """Open labeled issues with no active or done job, oldest first."""
     slug, vcs = repo["repo"], repo.get("vcs", "github")
-    issues = issue_list_labeled(slug, vcs, LABEL, limit=200)
+    cfg = load_config(repo.get("path", ""))
+    issues = issue_list_labeled(slug, vcs, LABEL, limit=200, config=cfg)
     built = {j["issue"] for j in all_jobs() if j["repo"] == slug}
     waiting = sorted(
         (i for i in issues if i["number"] not in built),
@@ -399,8 +494,10 @@ def add(args):
     slug = check_slug(args.repo)
     # Determine VCS from env hint or flag
     vcs = getattr(args, "vcs", None) or os.environ.get("FACTORY_VCS", "github")
+    # Load config from --path if provided, to get gitea_host etc.
+    cfg = load_config(args.path) if getattr(args, "path", None) else {}
 
-    info = repo_view(slug, vcs)
+    info = repo_view(slug, vcs, config=cfg)
     slug = info["nameWithOwner"]
 
     if info.get("isArchived") or not info.get("hasIssuesEnabled", True):
@@ -408,7 +505,7 @@ def add(args):
 
     if args.path:
         path = Path(args.path).expanduser().resolve()
-        if (origin_slug(path, vcs) or "").lower() != slug.lower():
+        if (origin_slug(path, vcs, config=cfg) or "").lower() != slug.lower():
             raise SystemExit(f"{path} isn't a clone of {slug}.")
         how = "Using the clone at"
     else:
@@ -425,8 +522,16 @@ def add(args):
             if path.exists():
                 raise SystemExit(f"{path} already exists and isn't a clone of {slug}.")
             path.parent.mkdir(parents=True, exist_ok=True)
-            cli_run(_cli(vcs), "repo", "clone", slug, str(path))
+            clone_cmd = ["gt", "repo", "clone", slug, str(path)] if vcs == "gitea" else \
+                        [_cli(vcs), "repo", "clone", slug, str(path)]
+            if vcs == "gitea":
+                host = _gt_host(cfg)
+                if host:
+                    clone_cmd += ["--host", host]
+            cli_run(*clone_cmd)
             how = "Cloned into"
+        # Reload config from discovered clone path
+        cfg = load_config(str(path))
 
     base = info["defaultBranchRef"]["name"]
 
@@ -440,7 +545,7 @@ def add(args):
         (LABEL_HUMAN, "D93F0B", "Factory needs a human decision"),
     ]:
         try:
-            label_create(slug, vcs, name, color, desc)
+            label_create(slug, vcs, name, color, desc, config=cfg)
         except SystemExit:
             pass  # label already exists — that's fine
 
@@ -492,7 +597,7 @@ def start(args):
             f"#{number} was claimed by a concurrent process. "
             "Run `factory.py monitor` to check current state.")
 
-    issue  = issue_view_full(slug, vcs, number)
+    issue  = issue_view_full(slug, vcs, number, config=load_config(path))
     branch = f"{LABEL}/issue-{number}"
     config = load_config(path)
 
@@ -677,7 +782,8 @@ def open_pr(args):
     try:
         git_push(path, "--set-upstream", "origin", job["branch"])
         url = pr_create(slug, vcs, job["base"], job["branch"],
-                        job["title"], str(final_body), draft)
+                        job["title"], str(final_body), draft,
+                        config=load_config(path))
     except BaseException as exc:
         # Roll back stage to "approve" on any failure — SystemExit (cli_run),
         # KeyboardInterrupt (SIGTERM/Ctrl-C mid-push), or unexpected OSError.
@@ -1044,7 +1150,7 @@ def main():
     s = sub.add_parser("add", help="register a repository with the factory")
     add_repo(s)
     s.add_argument("--path", help="force this local clone path")
-    s.add_argument("--vcs", choices=["github", "gitlab"], default=None,
+    s.add_argument("--vcs", choices=["github", "gitlab", "gitea"], default=None,
                    help="VCS backend (default: github)")
     s.set_defaults(func=add)
 

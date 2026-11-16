@@ -3,6 +3,7 @@
   "base_branch": "main",
   "merge_method": "merge",
   "vcs": "github",
+  "gitea_host": "",
   "checks_timeout_seconds": 300,
   "labels": {
     "queue": "factory",

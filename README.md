@@ -205,7 +205,16 @@ In `factory/config.json` inside your repo:
 ```json
 { "vcs": "github" }    // uses gh CLI  (default)
 { "vcs": "gitlab" }    // uses glab CLI
+{ "vcs": "gitea"  }    // uses gt CLI (self-hosted Gitea / Forgejo)
 ```
+
+For Gitea/Forgejo also set the instance URL:
+
+```json
+{ "vcs": "gitea", "gitea_host": "https://gitea.example.com" }
+```
+
+Or export `GITEA_CLI_HOST` / `GITEA_INSTANCE_URL` before starting the factory.
 
 ### Rounds and timeout
 
