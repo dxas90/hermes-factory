@@ -98,7 +98,11 @@ After add, the repo is ready for /factory run.
 
 ## /factory run OWNER/REPO
 
-Builds one issue — the oldest waiting — right here in this chat.
+Builds **exactly one issue** — the oldest waiting — right here in this chat.
+One run = one issue. When it finishes (merged, stopped, or escalated), stop.
+Do not loop. Do not start the next issue automatically. The user or cron decides
+when to run again.
+
 Read every step output before continuing. Never run dispatch from a chat session.
 
 ### Step 1: Claim the issue
@@ -107,7 +111,11 @@ Read every step output before continuing. Never run dispatch from a chat session
     # Prints: STARTED / BUSY / NO WORK
     # On STARTED: prints clone path, branch, job folder, issue JSON
 
-If BUSY or NO WORK: say so and finish. Do not continue.
+- BUSY    -> another job is already active. Say so and stop. Do NOT cancel it.
+- NO WORK -> queue is empty. Say so and stop. Do NOT look for more work.
+- STARTED -> proceed with steps 2–8 for this one issue only.
+
+**Never call `$FACTORY start` more than once per `/factory run` invocation.**
 
 ### Step 2: Intake (delegate_task)
 
@@ -213,6 +221,9 @@ Read first line of JOB_FOLDER/decision.md:
 
 Pushes the branch, opens the PR/MR, marks job done. Reports the PR/MR URL.
 
+**This is the end of the run. Stop here. Do not start another issue.**
+Print the PR/MR URL, print `$FACTORY monitor` output, then wait for the user.
+
 ## /factory schedule OWNER/REPO
 
 Sets up a Hermes cron job to drain the queue automatically.
@@ -297,9 +308,13 @@ One line per transition:
     owner/repo #12: APPROVE -> merged PR/MR #47
 
 After every run: print full `$FACTORY monitor` output, note any stopped or needs-human jobs.
+Then stop. One `/factory run` = one issue. Never loop to the next issue automatically.
 
 ## Pitfalls
 
+- **One issue per run.** `/factory run` processes exactly one issue then stops.
+  Never call `$FACTORY start` a second time in the same session.
+  The queue drains via cron (`/factory schedule`) not by looping in chat.
 - Never run `$FACTORY dispatch` from a chat session. dispatch is for cron only.
 - Never call `$FACTORY start` directly except when following the run loop above.
 - Subagents have zero memory of the orchestrator session.
