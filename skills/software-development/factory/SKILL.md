@@ -115,6 +115,9 @@ Read every step output before continuing. Never run dispatch from a chat session
 - NO WORK -> queue is empty. Say so and stop. Do NOT look for more work.
 - STARTED -> proceed with steps 2–8 for this one issue only.
 
+`start` creates the job branch from `origin/<base>` (fetches first). The branch
+is always a fresh cut from the latest remote default branch — no stale base.
+
 **Never call `$FACTORY start` more than once per `/factory run` invocation.**
 
 ### Step 2: Intake (delegate_task)

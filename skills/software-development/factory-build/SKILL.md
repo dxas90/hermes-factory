@@ -22,6 +22,27 @@ The worktree is in REPO/.worktrees/JOB_ID. All code changes happen there. Use ab
 paths. The job folder is in the main checkout; build.md is the only file you write there.
 Never edit anything else in the main checkout.
 
+## Branch hygiene — do this before any code change
+
+Before touching any file, verify the branch is up to date with the remote default branch:
+
+```bash
+# 1. Confirm you are on the right branch
+git branch --show-current          # must match BRANCH from your prompt
+
+# 2. Fetch latest from remote
+git fetch origin BASE_BRANCH
+
+# 3. Rebase onto the latest remote base (keeps a linear history)
+git rebase origin/BASE_BRANCH
+
+# If rebase conflicts: stop and write STATUS: BLOCKED — do not force-push or resolve blindly.
+```
+
+This applies on every round — round 1 and all subsequent rounds.
+The branch was cut from `origin/BASE` at job start, but the remote may have
+moved since. Never push a branch that is behind the remote default branch.
+
 ## Read first
 
 1. AGENTS.md (or CLAUDE.md) in the worktree. Follow it.
@@ -34,8 +55,7 @@ Never edit anything else in the main checkout.
 
 ## Build
 
-- Run `git branch --show-current` first. Must print the branch from your prompt.
-  If it doesn't, stop and write STATUS: BLOCKED.
+- Follow the branch hygiene steps above before making any change.
 - Round 1: run the setup AGENTS.md gives (install dependencies, etc.).
 - Match surrounding code: idioms, formatting, naming, imports, comment density.
 - Run only repo-configured formatters on lines you changed. Never reformat whole files.
