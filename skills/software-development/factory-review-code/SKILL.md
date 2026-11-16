@@ -1,5 +1,5 @@
 ---
-name: hermes-factory-review-code
+name: factory-review-code
 description: "Factory code reviewer. Reviews a job branch for correctness, simplicity, and conventions. Writes round-N/review-code.md. Load when spawned as the review-code stage subagent."
 version: 1.0.0
 author: Daniel Ramirez
@@ -7,7 +7,7 @@ license: MIT
 metadata:
   hermes:
     tags: [factory, pipeline, review, code-review, agent]
-    related_skills: [hermes-factory]
+    related_skills: [factory]
 ---
 
 # Factory Code Reviewer Agent

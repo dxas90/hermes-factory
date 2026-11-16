@@ -9,7 +9,7 @@ Do not describe planned capabilities as implemented.
 1. Never commit secrets. `.env` is forbidden. `.env.example` is allowed.
 2. Keep `distribution.yaml` at the repository root with all required fields.
 3. Keep the profile installable:
-   `hermes profile install github.com/dxas90/hermes-factory`
+   `hermes profile install github.com/dxas90/factory`
 4. Do not commit gitignored paths: `memories/`, `sessions/`, `logs/`,
    `.env`, caches, or `factory/jobs/`.
 5. SKILL.md frontmatter must have: `name`, `description`, `version`, `author`,
@@ -30,20 +30,20 @@ SECURITY.md                          Trust model, protected paths, approval mode
 
 skins/factory.yaml                   Dark forge + amber theme
 plugins/
-  hermes-factory-router/             Delegation provider plugin
+  factory-router/             Delegation provider plugin
     __init__.py                      Routes delegate_task(stage=X) to configured model
     plugin.yaml                      Plugin manifest
 
 skills/software-development/
-  hermes-factory/                    Orchestrator skill — runs the full pipeline loop
-  hermes-factory-intake/             Intake agent: ACCEPT / NEEDS-INFO / REJECT
-  hermes-factory-spec/               Spec writer: requirements + acceptance criteria
-  hermes-factory-build/              Builder: implements spec, commits, opens PR/MR
-  hermes-factory-review-code/        Code reviewer: correctness, simplicity, tests
-  hermes-factory-review-security/    Security reviewer: auth, input, secrets, deps
-  hermes-factory-review-ux/          UX reviewer: flows, states, copy, accessibility
-  hermes-factory-review-ui/          UI reviewer: visual consistency, styling, layout
-  hermes-factory-approve/            Approver: APPROVE or ESCALATE
+  factory/                    Orchestrator skill — runs the full pipeline loop
+  factory-intake/             Intake agent: ACCEPT / NEEDS-INFO / REJECT
+  factory-spec/               Spec writer: requirements + acceptance criteria
+  factory-build/              Builder: implements spec, commits, opens PR/MR
+  factory-review-code/        Code reviewer: correctness, simplicity, tests
+  factory-review-security/    Security reviewer: auth, input, secrets, deps
+  factory-review-ux/          UX reviewer: flows, states, copy, accessibility
+  factory-review-ui/          UI reviewer: visual consistency, styling, layout
+  factory-approve/            Approver: APPROVE or ESCALATE
 
 factory/
   bin/factory.py                     State machine + VCS abstraction (GitHub & GitLab)
@@ -106,7 +106,7 @@ Job directory names use `:` as the owner/repo separator:
 - Tags live under `metadata.hermes.tags` (list) — not at the top level.
 - `related_skills` entries must exist in this repo.
 - Body: under 500 lines per skill.
-- Agent instruction skills (`hermes-factory-*`) contain the full agent prompt.
+- Agent instruction skills (`factory-*`) contain the full agent prompt.
   When updating pipeline behaviour, update the corresponding SKILL.md.
 
 ## Version discipline
@@ -118,11 +118,11 @@ Any change to skills, SOUL.md, config.yaml, skins/, or plugins/ requires:
 
 ## Adding a new pipeline stage
 
-1. Create `skills/software-development/hermes-factory-<stage>/SKILL.md`.
-2. Add `<stage>` to `_ALL_STAGES` in `plugins/hermes-factory-router/__init__.py`.
+1. Create `skills/software-development/factory-<stage>/SKILL.md`.
+2. Add `<stage>` to `_ALL_STAGES` in `plugins/factory-router/__init__.py`.
 3. Add a `<stage>` entry under `delegation.backends.factory-router.stages`
    in `config.yaml`.
-4. Update the `hermes-factory` orchestrator skill to dispatch the new stage.
+4. Update the `factory` orchestrator skill to dispatch the new stage.
 5. Bump `distribution.yaml` version and update `CHANGELOG.md`.
 
 ## Validation before pushing

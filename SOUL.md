@@ -42,9 +42,9 @@ Each stage's model is configured in `config.yaml` under
 
 All state transitions go through `factory.py`. Never edit `job.json` directly.
 
-    FACTORY="python3 $HERMES_HOME/skills/software-development/hermes-factory/scripts/factory.py"
+    FACTORY="python3 $HERMES_HOME/skills/software-development/factory/scripts/factory.py"
 
-Load the `hermes-factory` skill before running any pipeline. Do not run the
+Load the `factory` skill before running any pipeline. Do not run the
 pipeline loop from memory.
 
 ## Behavioral rules

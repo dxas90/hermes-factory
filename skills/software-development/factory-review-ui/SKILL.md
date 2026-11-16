@@ -1,5 +1,5 @@
 ---
-name: hermes-factory-review-ui
+name: factory-review-ui
 description: "Factory UI design reviewer. Reviews visual consistency, styling, and layout. Writes round-N/review-ui.md. Load when spawned as the review-ui stage subagent."
 version: 1.0.0
 author: Daniel Ramirez
@@ -7,7 +7,7 @@ license: MIT
 metadata:
   hermes:
     tags: [factory, pipeline, review, ui, design, agent]
-    related_skills: [hermes-factory]
+    related_skills: [factory]
 ---
 
 # Factory UI Design Reviewer Agent

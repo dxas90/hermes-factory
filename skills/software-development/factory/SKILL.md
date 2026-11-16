@@ -1,5 +1,5 @@
 ---
-name: hermes-factory
+name: factory
 description: >-
   Software Factory for Hermes. Turns GitHub/GitLab issues into merged PRs/MRs
   through a full pipeline: intake, spec, build, gate, review, approve, merge.
@@ -11,9 +11,9 @@ license: MIT
 metadata:
   hermes:
     tags: [factory, software-factory, github, gitlab, pipeline, orchestration, cron]
-    related_skills: [hermes-factory-intake, hermes-factory-spec, hermes-factory-build,
-                     hermes-factory-review-code, hermes-factory-review-security,
-                     hermes-factory-review-ux, hermes-factory-review-ui, hermes-factory-approve]
+    related_skills: [factory-intake, factory-spec, factory-build,
+                     factory-review-code, factory-review-security,
+                     factory-review-ux, factory-review-ui, factory-approve]
 ---
 
 # Hermes Software Factory
@@ -25,7 +25,7 @@ orchestrator. All bookkeeping goes through one script — never improvise state.
 
 Find factory.py via the active profile's skill scripts, or next to this skill:
 
-    FACTORY="python3 $HERMES_HOME/skills/software-development/hermes-factory/scripts/factory.py"
+    FACTORY="python3 $HERMES_HOME/skills/software-development/factory/scripts/factory.py"
 
 If running inside the factory repo clone:
 
@@ -111,12 +111,12 @@ If BUSY or NO WORK: say so and finish. Do not continue.
 
 ### Step 2: Intake (delegate_task)
 
-Load hermes-factory-intake for the full agent prompt.
+Load factory-intake for the full agent prompt.
 
     result = delegate_task(tasks=[{
         "goal": (
             "Job: JOB_ID. Job folder: FOLDER/. Repo: REPO. Clone: CLONE. Issue: #N.\n"
-            "Load and follow the hermes-factory-intake skill."
+            "Load and follow the factory-intake skill."
         ),
         "context": "Repo: REPO\nJob folder: FOLDER\nIssue: #N\nClone: CLONE",
         "stage": "intake",
@@ -131,11 +131,11 @@ Read first line of JOB_FOLDER/intake.md:
 
 ### Step 3: Spec (delegate_task)
 
-Load hermes-factory-spec for the full agent prompt.
+Load factory-spec for the full agent prompt.
 
     result = delegate_task(tasks=[{
         "goal": "Job: JOB_ID. Job folder: FOLDER/. Clone: CLONE. Branch: BRANCH. Issue: #N.\n"
-                "Load and follow the hermes-factory-spec skill.",
+                "Load and follow the factory-spec skill.",
         "context": "Repo: REPO\nJob folder: FOLDER\nClone: CLONE\nBranch: BRANCH",
         "stage": "spec",
     }])
@@ -144,12 +144,12 @@ After: `$FACTORY stage REPO build`
 
 ### Step 4: Build (delegate_task)
 
-Load hermes-factory-build for the full agent prompt. Port = 5100 + 10 * issue_number.
+Load factory-build for the full agent prompt. Port = 5100 + 10 * issue_number.
 
     result = delegate_task(tasks=[{
         "goal": "Job: JOB_ID. Job folder: FOLDER/. Clone: CLONE. Branch: BRANCH. "
                 "Base: BASE. Issue: #N. Round: R. Port: PORT.\n"
-                "Load and follow the hermes-factory-build skill.",
+                "Load and follow the factory-build skill.",
         "context": "Repo: REPO\nJob folder: FOLDER\nClone: CLONE\nBranch: BRANCH\nRound: R",
         "stage": "build",
     }])
@@ -168,14 +168,14 @@ Read JOB_FOLDER/round-N/checks.md first line:
 
 ### Step 6: Review (parallel delegate_task)
 
-Load the relevant hermes-factory-review-* skills. Run ALL routed reviewers in ONE call.
+Load the relevant factory-review-* skills. Run ALL routed reviewers in ONE call.
 
     job_json = json.loads(open("JOB_FOLDER/job.json").read())
     reviewers = job_json["agents"]["reviewers"]   # {"code": "haiku", "security": "opus"}
 
     tasks = []
     for reviewer_name in reviewers:
-        skill = f"hermes-factory-review-{reviewer_name}"
+        skill = f"factory-review-{reviewer_name}"
         tasks.append({
             "goal": f"Job: JOB_ID. Job folder: FOLDER/. Clone: CLONE. Branch: BRANCH. "
                     f"Base: BASE. Issue: #N. Round: R.\nLoad and follow the {skill} skill.",
@@ -191,12 +191,12 @@ Refresh job.json, read reviews:
 
 ### Step 7: Approve (delegate_task)
 
-Load hermes-factory-approve for the full agent prompt.
+Load factory-approve for the full agent prompt.
 
     result = delegate_task(tasks=[{
         "goal": "Job: JOB_ID. Job folder: FOLDER/. Clone: CLONE. Branch: BRANCH. "
                 "Base: BASE. Issue: #N. PR/MR: #PR. Final round: R.\n"
-                "Load and follow the hermes-factory-approve skill.",
+                "Load and follow the factory-approve skill.",
         "context": "Repo: REPO\nJob folder: FOLDER\nPR: #PR\nRound: R",
         "stage": "approve",
     }])
@@ -225,7 +225,7 @@ workflow that calls `install-precheck` and creates a Hermes cron job.
 3. Create the Hermes cron job:
    - name:     `factory OWNER/REPO`
    - schedule: `every 10m` (or user's preference)
-   - skills:   `["hermes-factory"]`
+   - skills:   `["factory"]`
    - prompt:   `/factory run OWNER/REPO`
    - script:   the filename printed by install-precheck
    - no_agent: true

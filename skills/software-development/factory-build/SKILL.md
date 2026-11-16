@@ -1,5 +1,5 @@
 ---
-name: hermes-factory-build
+name: factory-build
 description: "Factory builder agent. Implements the spec on the job branch, commits, pushes, opens draft PR/MR, writes build.md. Load when spawned as the build stage subagent."
 version: 1.0.0
 author: Daniel Ramirez
@@ -7,7 +7,7 @@ license: MIT
 metadata:
   hermes:
     tags: [factory, pipeline, build, agent]
-    related_skills: [hermes-factory]
+    related_skills: [factory]
 ---
 
 # Factory Builder Agent

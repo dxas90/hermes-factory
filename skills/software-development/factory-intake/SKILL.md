@@ -1,5 +1,5 @@
 ---
-name: hermes-factory-intake
+name: factory-intake
 description: "Factory intake agent. Reads a GitHub/GitLab issue, decides ACCEPT/NEEDS-INFO/REJECT, rates risk and surfaces, writes intake.md. Load when spawned as the intake stage subagent."
 version: 1.0.0
 author: Daniel Ramirez
@@ -7,7 +7,7 @@ license: MIT
 metadata:
   hermes:
     tags: [factory, pipeline, intake, agent]
-    related_skills: [hermes-factory]
+    related_skills: [factory]
 ---
 
 # Factory Intake Agent

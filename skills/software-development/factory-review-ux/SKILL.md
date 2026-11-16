@@ -1,5 +1,5 @@
 ---
-name: hermes-factory-review-ux
+name: factory-review-ux
 description: "Factory UX reviewer. Reviews user flows, states, copy, and accessibility. Writes round-N/review-ux.md. Load when spawned as the review-ux stage subagent."
 version: 1.0.0
 author: Daniel Ramirez
@@ -7,7 +7,7 @@ license: MIT
 metadata:
   hermes:
     tags: [factory, pipeline, review, ux, agent]
-    related_skills: [hermes-factory]
+    related_skills: [factory]
 ---
 
 # Factory UX Reviewer Agent

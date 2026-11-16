@@ -9,7 +9,7 @@ angles, and opening a PR/MR for your approval — or auto-merging when it's safe
 ## Install
 
 ```bash
-hermes profile install github.com/dxas90/hermes-factory --alias
+hermes profile install github.com/dxas90/factory --alias
 ```
 
 Start it:
@@ -31,7 +31,7 @@ hermes -p factory chat  # without alias
 ## How it works
 
 The factory runs a fixed eight-stage pipeline. Each stage is a `delegate_task`
-subagent routed to a configurable model via the `hermes-factory-router` plugin.
+subagent routed to a configurable model via the `factory-router` plugin.
 State lives in `$HERMES_HOME/factory/` — entirely separate from your repo.
 
 ```
@@ -67,7 +67,7 @@ approve   reads every job file + the diff, decides:
 ### 1. Install and configure
 
 ```bash
-hermes profile install github.com/dxas90/hermes-factory --alias
+hermes profile install github.com/dxas90/factory --alias
 ```
 
 The profile ships with `anthropic` / `claude-sonnet-4-5` as defaults — if you
@@ -356,18 +356,18 @@ SECURITY.md                          Trust model and safety boundaries
 skins/factory.yaml                   Dark forge + amber theme
 
 plugins/
-  hermes-factory-router/             Delegation provider: per-stage model routing
+  factory-router/             Delegation provider: per-stage model routing
 
 skills/software-development/
-  hermes-factory/                    Orchestrator: runs the full pipeline loop
-  hermes-factory-intake/             Intake agent
-  hermes-factory-spec/               Spec writer
-  hermes-factory-build/              Builder
-  hermes-factory-review-code/        Code reviewer
-  hermes-factory-review-security/    Security reviewer
-  hermes-factory-review-ux/          UX reviewer
-  hermes-factory-review-ui/          UI reviewer
-  hermes-factory-approve/            Approver
+  factory/                    Orchestrator: runs the full pipeline loop
+  factory-intake/             Intake agent
+  factory-spec/               Spec writer
+  factory-build/              Builder
+  factory-review-code/        Code reviewer
+  factory-review-security/    Security reviewer
+  factory-review-ux/          UX reviewer
+  factory-review-ui/          UI reviewer
+  factory-approve/            Approver
 
 factory/
   bin/factory.py                     State machine + VCS abstraction (1100 lines)

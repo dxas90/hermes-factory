@@ -1,5 +1,5 @@
 ---
-name: hermes-factory-review-security
+name: factory-review-security
 description: "Factory security reviewer. Reviews for auth, permissions, input handling, and secrets. Writes round-N/review-security.md. Load when spawned as the review-security stage subagent."
 version: 1.0.0
 author: Daniel Ramirez
@@ -7,7 +7,7 @@ license: MIT
 metadata:
   hermes:
     tags: [factory, pipeline, review, security, agent]
-    related_skills: [hermes-factory]
+    related_skills: [factory]
 ---
 
 # Factory Security Reviewer Agent

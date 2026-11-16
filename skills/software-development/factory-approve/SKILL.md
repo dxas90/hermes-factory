@@ -1,5 +1,5 @@
 ---
-name: hermes-factory-approve
+name: factory-approve
 description: "Factory approver. Final gate: reads all job files and the diff, decides APPROVE or ESCALATE. Writes decision.md. Load when spawned as the approve stage subagent."
 version: 1.0.0
 author: Daniel Ramirez
@@ -7,7 +7,7 @@ license: MIT
 metadata:
   hermes:
     tags: [factory, pipeline, approve, agent]
-    related_skills: [hermes-factory]
+    related_skills: [factory]
 ---
 
 # Factory Approver Agent
