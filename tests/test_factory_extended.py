@@ -1037,7 +1037,7 @@ class TestPrecheckMessages(unittest.TestCase):
                 _repo(tmp, "o/r")
                 _job(tmp, "o/r", 7, stage="build")
                 with patch.object(F, "check_queue", return_value=[]),\
-                     contextlib.redirect_stdout(io.StringIO()) as out:
+                     contextlib.redirect_stderr(io.StringIO()) as out:
                     F.precheck(SimpleNamespace(repo="o/r"))
             output = out.getvalue()
         self.assertIn("7", output)
@@ -1049,7 +1049,7 @@ class TestPrecheckMessages(unittest.TestCase):
                 _repo(tmp, "o/r")
                 waiting = [{"number": i, "title": f"Issue {i}"} for i in range(1, 5)]
                 with patch.object(F, "check_queue", return_value=waiting),\
-                     contextlib.redirect_stdout(io.StringIO()) as out:
+                     contextlib.redirect_stderr(io.StringIO()) as out:
                     F.precheck(SimpleNamespace(repo="o/r"))
             output = out.getvalue()
         self.assertIn("4", output)
@@ -1059,7 +1059,7 @@ class TestPrecheckMessages(unittest.TestCase):
             with _env(tmp):
                 _repo(tmp, "o/r")
                 with patch.object(F, "check_queue", return_value=[]),\
-                     contextlib.redirect_stdout(io.StringIO()) as out:
+                     contextlib.redirect_stderr(io.StringIO()) as out:
                     F.precheck(SimpleNamespace(repo="o/r"))
             output = out.getvalue()
         self.assertIn("no issues", output.lower())
@@ -2099,13 +2099,16 @@ class TestPass2ReviewerFindings(unittest.TestCase):
                     F.round_next_cmd(SimpleNamespace(repo="o/r"))
             self.assertIn("build", str(ctx.exception))
 
-    def test_round_next_refuses_at_gate(self):
+    def test_round_next_accepts_at_gate(self):
+        """Gate FAIL leaves the job at 'gate'; a new round starts from build."""
         with tempfile.TemporaryDirectory() as tmp:
             with _env(tmp):
                 _repo(tmp, "o/r")
                 _job(tmp, "o/r", 1, stage="gate", round_=0, round_limit=3)
-                with self.assertRaises(SystemExit):
-                    F.round_next_cmd(SimpleNamespace(repo="o/r"))
+                F.round_next_cmd(SimpleNamespace(repo="o/r"))
+                saved = json.loads((F.job_dir("o/r", 1) / "job.json").read_text())
+            self.assertEqual(saved["round"], 1)
+            self.assertEqual(saved["stage"], "build")
 
     def test_round_next_accepts_at_review(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -2130,8 +2133,10 @@ class TestPass2ReviewerFindings(unittest.TestCase):
 
     def test_skill_md_job_path_uses_colon_separator(self):
         """SKILL.md must reference OWNER:REPO--N not OWNER--REPO--N."""
-        skill = Path(__file__).resolve().parents[1] / \
-                "skills/software-development/hermes-factory/SKILL.md"
+        root = Path(__file__).resolve().parents[1]
+        skill = root / "skills/software-development/factory/SKILL.md"
+        if not skill.exists():
+            skill = root / "skills/software-development/hermes-factory/SKILL.md"
         content = skill.read_text()
         self.assertNotIn("OWNER--REPO--N", content,
                          "SKILL.md still has stale OWNER--REPO--N path format")

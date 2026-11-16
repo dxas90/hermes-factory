@@ -370,8 +370,9 @@ class TestStageRouteNote(unittest.TestCase):
                 F.route_cmd(SimpleNamespace(
                     repo="o/r", risk="high", surfaces=["security"]))
                 job = F.active_job("o/r")
-        self.assertIn("code", job["agents"])
-        self.assertIn("security", job["agents"])
+        # Reviewer routing lives under agents.reviewers (flat keys retired).
+        self.assertIn("code", job["agents"]["reviewers"])
+        self.assertIn("security", job["agents"]["reviewers"])
 
     def test_note_appended(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -380,8 +381,9 @@ class TestStageRouteNote(unittest.TestCase):
                 self._start_job(tmp, repo, "o/r")
                 F.note_cmd(SimpleNamespace(repo="o/r", text="reviewer note"))
                 jd = F.job_dir("o/r", 1)
-                notes = (jd / "notes.md").read_text()
-        self.assertIn("reviewer note", notes)
+                job = json.loads((jd / "job.json").read_text())
+        # Notes live in the job's event log (no separate notes.md).
+        self.assertIn("reviewer note", [e["text"] for e in job["events"]])
 
 
 # ─────────────────────────── 5. gate ───────────────────────────────────────────
@@ -424,6 +426,10 @@ class TestGate(unittest.TestCase):
                            capture_output=True)
             subprocess.run(["git", "-C", str(repo), "commit", "-m", "break",
                             "--quiet"], check=True, capture_output=True)
+            # The job branch starts from origin/main, so the broken
+            # checks.sh must be pushed to origin first.
+            subprocess.run(["git", "-C", str(repo), "push", "origin", "main",
+                            "--quiet"], check=True, capture_output=True)
             with _env(tmp):
                 self._job_at_build(tmp, repo, "o/r")
                 F.gate_cmd(SimpleNamespace(repo="o/r"))
@@ -447,6 +453,10 @@ class TestGate(unittest.TestCase):
             subprocess.run(["git", "-C", str(repo), "add", "."], check=True,
                            capture_output=True)
             subprocess.run(["git", "-C", str(repo), "commit", "-m", "slow",
+                            "--quiet"], check=True, capture_output=True)
+            # The job branch starts from origin/main, so the slow
+            # checks.sh and the 1s timeout must be pushed to origin first.
+            subprocess.run(["git", "-C", str(repo), "push", "origin", "main",
                             "--quiet"], check=True, capture_output=True)
             with _env(tmp):
                 self._job_at_build(tmp, repo, "o/r")
@@ -589,13 +599,16 @@ class TestRoundNext(unittest.TestCase):
                     F.round_next_cmd(SimpleNamespace(repo="o/r"))
         self.assertIn("build", str(ctx.exception))
 
-    def test_round_next_refuses_at_gate(self):
+    def test_round_next_from_gate(self):
+        """Gate FAIL leaves the job at 'gate'; round-next must work there."""
         with tempfile.TemporaryDirectory() as tmp:
             repo = _make_git_repo(tmp + "/repo")
             with _env(tmp):
                 self._at_stage(tmp, repo, "o/r", "gate")
-                with self.assertRaises(SystemExit):
-                    F.round_next_cmd(SimpleNamespace(repo="o/r"))
+                F.round_next_cmd(SimpleNamespace(repo="o/r"))
+                job = F.active_job("o/r")
+        self.assertEqual(job["round"], 1)
+        self.assertEqual(job["stage"], "build")
 
     def test_round_next_refuses_at_max(self):
         with tempfile.TemporaryDirectory() as tmp:

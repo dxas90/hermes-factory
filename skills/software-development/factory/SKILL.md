@@ -247,11 +247,13 @@ workflow that calls `install-precheck` and creates a Hermes cron job.
 
 ## /factory round-next OWNER/REPO
 
-When review produces CHANGES, the orchestrator must start another build round:
+When the gate FAILS (job left at `gate`) or review produces CHANGES
+(job at `review`/`approve`), the orchestrator must start another build round:
 
     $FACTORY round-next OWNER/REPO
 
 This increments `job["round"]`, resets stage to `build`, and writes a log event.
+Only valid from `gate`, `review`, or `approve` — never before the gate has run.
 If `round >= round_limit`, raises an error — stop the job instead.
 
 ## /factory cancel [OWNER/REPO]
