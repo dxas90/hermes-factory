@@ -603,6 +603,18 @@ def start(args):
 
     number = waiting[0]["number"]
 
+    # Hard label re-verification: confirm the issue STILL carries the factory
+    # label right now, directly from the VCS API — not from the local snapshot.
+    # This prevents acting on an issue whose label was removed after check_queue
+    # ran, and ensures no code path can start a job on an unlabeled issue.
+    cfg = load_config(path)
+    live_labeled = {i["number"] for i in issue_list_labeled(slug, vcs, LABEL, limit=200, config=cfg)}
+    if number not in live_labeled:
+        raise SystemExit(
+            f"LABEL GUARD: issue #{number} no longer carries the `{LABEL}` label. "
+            "Remove it from the queue snapshot and re-run to pick the next issue."
+        )
+
     # TOCTOU guard: claim the issue number by creating the job dir exclusively.
     # If two concurrent start() calls race, only one gets O_EXCL; the other fails.
     claim_path = job_dir(slug, number) / "job.json"
@@ -969,7 +981,7 @@ def dispatch(args):
                 f"Factory worker for {slug} issue #{number}. "
                 f"The dispatcher already ran start; the active job is at ingest in {folder}, "
                 f"clone {repo['path']}. "
-                "Do NOT run start or dispatch. Load the hermes-factory skill and follow the "
+                "Do NOT run start or dispatch. Load the factory skill and follow the "
                 "pipeline from ingest through spec, build, gate, review, approve, and open-pr "
                 "for ONLY this issue. "
                 f"Use `python3 {Path(__file__).resolve()}` for all bookkeeping. "

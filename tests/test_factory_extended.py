@@ -199,6 +199,8 @@ class TestLoadConfig(unittest.TestCase):
                          "author": {"login": "u"}}
                 with patch.object(F, "check_queue",
                                   return_value=[{"number": 1, "title": "t"}]),\
+                     patch.object(F, "issue_list_labeled",
+                                  return_value=[{"number": 1, "title": "t"}]),\
                      patch.object(F, "issue_view_full", return_value=issue),\
                      patch.object(F, "cli_run", return_value=""),\
                      contextlib.redirect_stdout(io.StringIO()):
@@ -726,7 +728,7 @@ class TestDispatchExtra(unittest.TestCase):
                      contextlib.redirect_stdout(io.StringIO()):
                     F.dispatch(SimpleNamespace(repo=slug))
             self.assertTrue(any("42" in p for p in prompts))
-            self.assertTrue(any("hermes-factory" in p for p in prompts))
+            self.assertTrue(any("factory" in p for p in prompts))
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1901,6 +1903,8 @@ class TestReviewerFindings(unittest.TestCase):
                 # Pre-create the job directory to simulate a race
                 F.job_dir("o/r", 7).mkdir(parents=True, exist_ok=True)
                 with patch.object(F, "check_queue",
+                                  return_value=[{"number": 7, "title": "t"}]), \
+                     patch.object(F, "issue_list_labeled",
                                   return_value=[{"number": 7, "title": "t"}]), \
                      patch.object(F, "cli_run", return_value=""), \
                      contextlib.redirect_stdout(io.StringIO()):

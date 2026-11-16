@@ -443,12 +443,18 @@ class TestStart(unittest.TestCase):
              "body": "broken", "url": "https://x.com/7",
              "author": {"login": "alice"}}
 
-    def _start(self, tmp, slug, queue=None, issue=None, dirty=""):
+    def _start(self, tmp, slug, queue=None, issue=None, dirty="",
+               live_labeled=None):
         _repo(tmp, slug, path=tmp)
         if queue is not None:
             rec = F.load_repo(slug)
             rec["queue"] = queue
             F.save(F.repo_file(slug), rec)
+
+        # By default the live label list matches the queue (guard passes).
+        # Pass live_labeled=[] to simulate the label having been removed.
+        if live_labeled is None:
+            live_labeled = list(queue or [])
 
         def fake_cli(*args, **kw):
             if "status" in args:
@@ -457,6 +463,8 @@ class TestStart(unittest.TestCase):
 
         with patch.object(F, "check_queue",
                           return_value=queue or []),\
+             patch.object(F, "issue_list_labeled",
+                          return_value=live_labeled),\
              patch.object(F, "issue_view_full",
                           return_value=self.ISSUE),\
              patch.object(F, "cli_run",
@@ -532,6 +540,30 @@ class TestStart(unittest.TestCase):
                 out = self._start(tmp, "o/r",
                                   queue=[{"number": 7, "title": "t"}],
                                   issue=7)
+            self.assertIn("STARTED", out)
+
+    def test_label_guard_blocks_unlabeled_issue(self):
+        """start() must refuse to act on an issue that lost its factory label
+        between check_queue and the live re-verification call."""
+        with tempfile.TemporaryDirectory() as tmp:
+            with _env(tmp):
+                _repo(tmp, "o/r", path=tmp)
+                # Queue says issue 7 is waiting, but live API returns empty —
+                # the label was removed after the snapshot was taken.
+                with self.assertRaises(SystemExit) as ctx:
+                    self._start(tmp, "o/r",
+                                queue=[{"number": 7, "title": "t"}],
+                                live_labeled=[])
+        self.assertIn("LABEL GUARD", str(ctx.exception))
+
+    def test_label_guard_passes_when_label_present(self):
+        """start() proceeds normally when live re-verification confirms the label."""
+        with tempfile.TemporaryDirectory() as tmp:
+            with _env(tmp):
+                _repo(tmp, "o/r", path=tmp)
+                out = self._start(tmp, "o/r",
+                                  queue=[{"number": 7, "title": "t"}],
+                                  live_labeled=[{"number": 7, "title": "t"}])
             self.assertIn("STARTED", out)
 
 
