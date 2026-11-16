@@ -68,12 +68,27 @@ approve   reads every job file + the diff, decides:
 
 ```bash
 hermes profile install github.com/dxas90/hermes-factory --alias
+```
 
-# Set your provider and model — edit the installed config:
-# ~/.hermes/profiles/factory/config.yaml
-#   model.default: claude-opus-4-5
-#   model.provider: anthropic
+The profile ships with `anthropic` / `claude-sonnet-4-5` as defaults — if you
+have an Anthropic API key you can skip to step 2. For any other provider,
+configure once with `hermes -p factory config set`:
 
+```bash
+# OpenRouter example
+hermes -p factory config set model.provider openrouter
+hermes -p factory config set model.default anthropic/claude-sonnet-4-5
+
+# Custom OpenAI-compatible proxy (LiteLLM, etc.) — also add a providers: block
+# to ~/.hermes/profiles/factory/config.yaml with the api/api_key fields.
+hermes -p factory config set model.provider custom:myprovider
+hermes -p factory config set model.default my-model-name
+```
+
+> Use `hermes profile update` to pull new versions — never delete + reinstall,
+> as that leaves stale database handles that require a gateway restart.
+
+```bash
 factory chat -q "What model am I using?"
 ```
 
