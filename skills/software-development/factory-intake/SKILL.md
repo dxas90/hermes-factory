@@ -27,6 +27,22 @@ a build, and several reviews. Accept only work worth that, scoped to land as one
    the issue's comments hold the answer.
 3. AGENTS.md (or CLAUDE.md) in the repo root, and the code the issue would touch.
 
+## Triage state machine
+
+Every issue passes through exactly one **category** and one **state**:
+
+Category:
+- `bug` — something is broken
+- `enhancement` — new feature or improvement
+
+State (your DECISION maps to these):
+- `NEEDS-INFO` — waiting on the author for information only they can provide
+- `ACCEPT` → `ready-for-agent` — fully specified, safe to build
+- `REJECT` → `wontfix` — will not be actioned; explain why
+
+Transitions: unlabeled → intake → ACCEPT / NEEDS-INFO / REJECT.
+NEEDS-INFO returns to intake once the author replies (look for earlier intake-N.md).
+
 ## Decide
 
 - **ACCEPT** when the request is clear, fits the project, and can be built and reviewed
@@ -67,6 +83,39 @@ Two or three sentences on the decision, citing the code you looked at.
 ## Questions
 For NEEDS-INFO only: numbered questions for the author.
 ```
+
+For ACCEPT decisions, also append an **Agent Brief** section. This is the
+authoritative contract the builder works from — write it as if the codebase
+will have changed by the time the builder reads it:
+
+```
+## Agent Brief
+
+**Category:** bug | enhancement
+**Summary:** one-line description of what needs to happen
+
+**Current behavior:**
+What happens now. For bugs: the broken behavior. For enhancements: the status quo.
+
+**Desired behavior:**
+What should happen after the work is done. Be specific about edge cases.
+
+**Key interfaces:**
+- TypeName or functionName(): what needs to change and why (no file paths or line numbers)
+
+**Acceptance criteria:**
+- [ ] Specific, testable criterion
+- [ ] Another criterion
+
+**Out of scope:**
+- Thing that must NOT be changed in this issue
+```
+
+Agent brief rules (from AGENT-BRIEF.md):
+- **Durability over precision**: describe interfaces and behaviour, not file paths or line numbers
+- **Behavioral, not procedural**: describe WHAT, not HOW
+- **Complete acceptance criteria**: each criterion independently verifiable
+- **Explicit out of scope**: prevents gold-plating
 
 - The four header lines come first, then a blank line.
 - Write RISK, SURFACES and RESCOPED on every decision.

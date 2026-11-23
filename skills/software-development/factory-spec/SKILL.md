@@ -39,19 +39,42 @@ paths for all file operations. The job folder is in the main checkout; spec.md g
 ## Summary
 - 3 to 5 short bullets: what this step decided and why
 
-## Context
-Where this lives: the files, components, and data involved, and how they work today. Cite paths.
+## Problem statement
+The problem the user is facing, from the user's perspective.
 
-## Requirements
-Numbered list of what must be true when the work is done.
+## Solution
+The solution, from the user's perspective.
+
+## User stories
+Numbered list. Format: "As a <who>, I want <what>, so that <why>."
+Be extensive — cover all aspects including edge cases and error states.
+
+## Context
+Where this lives: the files, components, and data involved, and how they work today.
+Cite interfaces and type names; no file paths or line numbers (they go stale).
+
+## Implementation decisions
+- The modules that will be built/modified
+- Interfaces and their changes
+- Architectural decisions
+- Schema changes / API contracts
+If a prototype snippet encodes a decision more precisely than prose (state machine,
+schema, type shape), inline it and note it came from a prototype. Trim to the
+decision-rich parts only.
+
+## Testing decisions
+- What makes a good test for this change (test behavior through public interfaces, not
+  implementation details; expected values from known literals, not recomputed the same way)
+- Which seams will be tested (confirm with the read-first context, not guessed)
+- Prior art: similar tests already in the codebase to follow
 
 ## Acceptance criteria
-Numbered list. Each criterion: one observable behaviour plus how to verify it
-(a command, a page and what it should show, or a file that should contain something).
-The builder tests against this list. Every item must be checkable from the repo.
+Numbered list. Each: one observable behaviour + how to verify it
+(a command, a page and what it shows, or a file that should contain something).
+Every item must be checkable from the repo.
 
 ## Out of scope
-What a reasonable builder might be tempted to do but must not.
+What a reasonable builder might do but must not.
 
 ## Assumptions
 Decisions you made where the request was ambiguous, with a one-line reason each.

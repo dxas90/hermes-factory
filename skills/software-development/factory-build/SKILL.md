@@ -62,6 +62,58 @@ moved since. Never push a branch that is behind the remote default branch.
 - Make the simplest change that fully meets the spec. No fallbacks or extras.
 - Never modify files matching `protected_paths` in factory/config.json.
 
+### For enhancement issues — TDD loop
+
+Work in vertical slices. One test → one implementation → repeat.
+Never write all tests first (horizontal slicing): it tests imagined behavior
+and locks in structure before you understand the implementation.
+
+Red → green rules:
+- Write the failing test first. Watch it fail before writing any code.
+- Write only enough code to make it pass. No speculative features.
+- One seam at a time. Confirm seams with spec.md Testing Decisions before writing.
+- Refactoring is not part of this loop — it belongs in review.
+
+What a good test is:
+- Tests behavior through public interfaces, not implementation details
+- Expected values are independent known literals, not recomputed the same way as the code
+- Survives refactors because it doesn't care about internal structure
+- One logical assertion per test; name describes WHAT not HOW
+
+Anti-patterns to avoid:
+- Mocking internal collaborators (implementation-coupled)
+- Asserting on call counts / order instead of outcomes
+- Recomputing the expected value the same way the code does (tautological)
+
+### For bug issues — diagnosis loop
+
+Do not guess or jump straight to a fix. Build a feedback loop first.
+
+Phase 1 — build a tight feedback loop:
+  Write the failing test / curl / CLI invocation that goes red on THIS bug.
+  It must be: red-capable (catches this exact symptom), deterministic,
+  fast (seconds), and agent-runnable. No Phase 2 until this exists.
+
+Phase 2 — reproduce + minimise:
+  Run the loop. Confirm it matches the user's exact symptom. Shrink the repro
+  to the smallest scenario that still fails (every remaining element load-bearing).
+
+Phase 3 — hypothesise:
+  Generate 3-5 ranked falsifiable hypotheses before testing any.
+  Format: "If X is the cause, then changing Y will make the bug disappear."
+
+Phase 4 — instrument:
+  One variable at a time. Tag every debug log `[DEBUG-xxxx]` for easy cleanup.
+  Prefer debugger/REPL over logging. Never "log everything and grep".
+
+Phase 5 — fix + regression test:
+  Write the regression test at the correct seam before applying the fix.
+  Watch it fail, apply fix, watch it pass, re-run the Phase 1 loop.
+
+Phase 6 — cleanup:
+  Original repro no longer reproduces. All `[DEBUG-...]` logs removed.
+  Throwaway prototypes deleted. Commit message states the winning hypothesis.
+
 ## VCS — opening the draft PR/MR
 
 Read factory/config.json for the "vcs" key.
