@@ -250,19 +250,19 @@ def repo_view(slug, vcs, config=None):
             "defaultBranchRef": {"name": raw.get("default_branch", "main")},
         }
     elif vcs == "gitea":
-        # gt repo view --json returns GitHub-compatible JSON fields
+        # gitea-cli (gt) uses Gitea's field names: full_name, default_branch, archived
         host = _gt_host(config)
         cmd = ["gt", "repo", "view", slug,
-               "--json", "nameWithOwner,defaultBranchRef,isArchived"]
+               "--json", "full_name,default_branch,archived"]
         if host:
             cmd += ["--host", host]
         raw = json.loads(cli_run(*cmd))
         return {
-            "nameWithOwner": raw.get("nameWithOwner", slug),
+            "nameWithOwner": raw.get("full_name") or slug,
             "viewerPermission": "WRITE",  # validated by push dry-run
             "hasIssuesEnabled": True,
-            "isArchived": raw.get("isArchived", False),
-            "defaultBranchRef": raw.get("defaultBranchRef", {"name": "main"}),
+            "isArchived": bool(raw.get("archived")),
+            "defaultBranchRef": {"name": raw.get("default_branch") or "main"},
         }
     else:
         return json.loads(cli_run(
@@ -310,7 +310,19 @@ def issue_view_full(slug, vcs, number, config=None):
                "--json", "number,title,body,url,author"]
         if host:
             cmd += ["--host", host]
-        return json.loads(cli_run(*cmd))
+        raw = json.loads(cli_run(*cmd))
+        who = raw.get("author")
+        if isinstance(who, dict):
+            login = who.get("login") or who.get("username") or ""
+        else:
+            login = who or ""
+        return {
+            "number": raw.get("number", number),
+            "title": raw.get("title") or "",
+            "body": raw.get("body") or "",
+            "url": raw.get("url") or "",
+            "author": {"login": login},
+        }
     else:
         return json.loads(cli_run(
             "gh", "issue", "view", str(number), "--repo", slug,
@@ -337,16 +349,13 @@ def label_create(slug, vcs, name, color, description, config=None):
         cli_run("glab", "label", "create", name, "--repo", slug,
                 "--color", f"#{color}", "--force")
     elif vcs == "gitea":
-        # gt label create --color requires the hash prefix (like glab)
+        # gt label create NAME --color RRGGBB (no '#'); --force updates an existing label
         host = _gt_host(config)
-        cmd = ["gt", "label", "create", "--repo", slug,
-               "--name", name, "--color", f"#{color}", "--force"]
+        cmd = ["gt", "label", "create", name, "--repo", slug,
+               "--color", color, "--description", description, "--force"]
         if host:
             cmd += ["--host", host]
-        try:
-            cli_run(*cmd)
-        except SystemExit:
-            pass  # label already exists
+        cli_run(*cmd)
     else:
         cli_run("gh", "label", "create", name, "--repo", slug,
                 "--color", color, "--description", description, "--force")
@@ -381,6 +390,7 @@ def pr_create(slug, vcs, base, branch, title, body_file, draft, config=None):
             args.append("--draft")
         if host:
             args += ["--host", host]
+        args += ["--json", "url", "--jq", ".url"]
         return cli_run(*args).splitlines()[-1]
     else:
         args = ["gh", "pr", "create",

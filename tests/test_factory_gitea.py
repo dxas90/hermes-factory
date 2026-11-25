@@ -6,12 +6,12 @@ Coverage:
   _vcs                     -> "gitea" from dict and registered repo
   _gt_host                 -> env vars, config key, empty
   origin_slug              -> Gitea HTTPS, SSH, host verification, no match
-  repo_view gitea          -> gt repo view --json, host forwarded
+  repo_view gitea          -> gt repo view --json full_name,default_branch,archived
   issue_list_labeled gitea -> gt issue list, host forwarded
-  issue_view_full gitea    -> gt issue view --json
+  issue_view_full gitea    -> gt issue view --json, author object or string, nulls
   issue_comment gitea      -> gt issue comment
-  label_create gitea       -> gt label create, already-exists swallowed
-  pr_create gitea          -> draft/no-draft, host forwarded
+  label_create gitea       -> gt label create NAME --color RRGGBB --force, errors raised
+  pr_create gitea          -> draft/no-draft, host forwarded, URL via --json url
   add --vcs gitea          -> gitea in argparser choices
   check_queue gitea        -> passes config to issue_list_labeled
 """
@@ -161,42 +161,56 @@ class TestOriginSlugGitea(unittest.TestCase):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class TestRepoViewGitea(unittest.TestCase):
+    """gitea-cli (gt) reports Gitea field names: full_name, default_branch, archived.
+    Asking for GitHub names (nameWithOwner, ...) makes gt fail with
+    'unknown JSON field'."""
 
-    def test_repo_view_gitea_returns_normalized(self):
-        raw = {
-            "nameWithOwner": "owner/repo",
-            "defaultBranchRef": {"name": "main"},
-            "isArchived": False,
-        }
+    RAW = {"full_name": "owner/repo", "default_branch": "main", "archived": False}
+
+    def _call(self, raw=None, env_host=""):
         calls = []
         with patch.object(F, "cli_run",
-                          side_effect=lambda *a, **kw: calls.append(a) or json.dumps(raw)):
-            with patch.dict(os.environ, GITEA_CLI_HOST="https://gitea.host", GITEA_INSTANCE_URL=""):
-                result = F.repo_view("owner/repo", "gitea")
+                          side_effect=lambda *a, **kw: calls.append(a) or json.dumps(raw or self.RAW)):
+            with patch.dict(os.environ, GITEA_CLI_HOST=env_host, GITEA_INSTANCE_URL=""):
+                result = F.repo_view("owner/repo", "gitea", config={})
+        return result, calls
+
+    def test_requests_gitea_field_names(self):
+        _, calls = self._call()
+        args = list(calls[0])
+        self.assertEqual(args[:4], ["gt", "repo", "view", "owner/repo"])
+        self.assertEqual(args[args.index("--json") + 1], "full_name,default_branch,archived")
+        for github_name in ("nameWithOwner", "defaultBranchRef", "isArchived"):
+            self.assertNotIn(github_name, " ".join(args))
+
+    def test_returns_normalized(self):
+        result, _ = self._call()
         self.assertEqual(result["nameWithOwner"], "owner/repo")
         self.assertEqual(result["defaultBranchRef"]["name"], "main")
         self.assertFalse(result["isArchived"])
-        # gt must be called, not gh or glab
-        self.assertTrue(any("gt" in str(c) for c in calls))
+        self.assertTrue(result["hasIssuesEnabled"])
+        self.assertEqual(result["viewerPermission"], "WRITE")
+
+    def test_archived_and_other_default_branch(self):
+        result, _ = self._call({"full_name": "o/r", "default_branch": "develop", "archived": True})
+        self.assertTrue(result["isArchived"])
+        self.assertEqual(result["defaultBranchRef"]["name"], "develop")
+
+    def test_nulls_fall_back(self):
+        """gt 2.x prints null for absent values."""
+        result, _ = self._call({"full_name": None, "default_branch": None, "archived": None})
+        self.assertEqual(result["nameWithOwner"], "owner/repo")
+        self.assertEqual(result["defaultBranchRef"]["name"], "main")
+        self.assertFalse(result["isArchived"])
 
     def test_repo_view_gitea_host_forwarded(self):
-        raw = {"nameWithOwner": "o/r", "defaultBranchRef": {"name": "main"}, "isArchived": False}
-        calls = []
-        with patch.object(F, "cli_run",
-                          side_effect=lambda *a, **kw: calls.append(a) or json.dumps(raw)):
-            with patch.dict(os.environ, GITEA_CLI_HOST="https://gt.host", GITEA_INSTANCE_URL=""):
-                F.repo_view("o/r", "gitea")
+        _, calls = self._call(env_host="https://gt.host")
         flat = " ".join(str(c) for c in calls)
         self.assertIn("--host", flat)
         self.assertIn("https://gt.host", flat)
 
     def test_repo_view_gitea_no_host_no_flag(self):
-        raw = {"nameWithOwner": "o/r", "defaultBranchRef": {"name": "main"}, "isArchived": False}
-        calls = []
-        with patch.object(F, "cli_run",
-                          side_effect=lambda *a, **kw: calls.append(a) or json.dumps(raw)):
-            with patch.dict(os.environ, GITEA_CLI_HOST="", GITEA_INSTANCE_URL=""):
-                F.repo_view("o/r", "gitea", config={})
+        _, calls = self._call()
         flat = " ".join(str(c) for c in calls)
         self.assertNotIn("--host", flat)
 
@@ -261,6 +275,23 @@ class TestIssueViewFullGitea(unittest.TestCase):
         self.assertEqual(result["author"]["login"], "alice")
         self.assertEqual(result["body"], "desc")
 
+    def test_author_as_plain_string(self):
+        raw = {"number": 5, "title": "t", "body": "b", "url": "u", "author": "bob"}
+        with patch.object(F, "cli_run", return_value=json.dumps(raw)):
+            with patch.dict(os.environ, GITEA_CLI_HOST="", GITEA_INSTANCE_URL=""):
+                result = F.issue_view_full("o/r", "gitea", 5)
+        self.assertEqual(result["author"]["login"], "bob")
+
+    def test_nulls_become_empty_strings(self):
+        """gt 2.x prints null for absent values; callers expect strings."""
+        raw = {"number": 5, "title": "t", "body": None, "url": None, "author": None}
+        with patch.object(F, "cli_run", return_value=json.dumps(raw)):
+            with patch.dict(os.environ, GITEA_CLI_HOST="", GITEA_INSTANCE_URL=""):
+                result = F.issue_view_full("o/r", "gitea", 5)
+        self.assertEqual(result["body"], "")
+        self.assertEqual(result["url"], "")
+        self.assertEqual(result["author"]["login"], "")
+
     def test_uses_gt_cli(self):
         raw = {"number": 1, "title": "t", "body": "", "url": "", "author": {"login": ""}}
         calls = []
@@ -302,31 +333,43 @@ class TestIssueCommentGitea(unittest.TestCase):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class TestLabelCreateGitea(unittest.TestCase):
+    """gt label create NAME [--color RRGGBB] [--description D] [--force].
+    There is no --name flag, and the colour has no '#'."""
 
-    def test_uses_gt_with_hash_color(self):
+    def _calls(self, env_host=""):
         calls = []
         with patch.object(F, "cli_run",
                           side_effect=lambda *a, **kw: calls.append(a) or ""):
-            with patch.dict(os.environ, GITEA_CLI_HOST="", GITEA_INSTANCE_URL=""):
+            with patch.dict(os.environ, GITEA_CLI_HOST=env_host, GITEA_INSTANCE_URL=""):
                 F.label_create("o/r", "gitea", "factory", "5319E7", "desc")
-        flat = " ".join(str(c) for c in calls)
-        self.assertIn("gt", flat)
-        self.assertIn("#5319E7", flat)
+        return calls
 
-    def test_already_exists_swallowed(self):
-        """SystemExit from gt label create must not propagate."""
-        with patch.object(F, "cli_run", side_effect=SystemExit("already exists")):
+    def test_name_is_positional(self):
+        args = list(self._calls()[0])
+        self.assertEqual(args[:4], ["gt", "label", "create", "factory"])
+        self.assertNotIn("--name", args)
+
+    def test_color_without_hash(self):
+        args = list(self._calls()[0])
+        self.assertEqual(args[args.index("--color") + 1], "5319E7")
+        self.assertNotIn("#5319E7", " ".join(args))
+
+    def test_description_and_force(self):
+        args = list(self._calls()[0])
+        self.assertEqual(args[args.index("--description") + 1], "desc")
+        self.assertIn("--force", args)  # updates an existing label instead of failing
+
+    def test_errors_propagate(self):
+        """With --force an existing label is not an error, so a failure is real
+        (bad flags, no permission) and must not be hidden: issue list
+        --label factory fails later if the label was never created."""
+        with patch.object(F, "cli_run", side_effect=SystemExit("gt label create failed")):
             with patch.dict(os.environ, GITEA_CLI_HOST="", GITEA_INSTANCE_URL=""):
-                F.label_create("o/r", "gitea", "factory", "5319E7", "desc")
-        # Must not raise
+                with self.assertRaises(SystemExit):
+                    F.label_create("o/r", "gitea", "factory", "5319E7", "desc")
 
     def test_host_forwarded(self):
-        calls = []
-        with patch.object(F, "cli_run",
-                          side_effect=lambda *a, **kw: calls.append(a) or ""):
-            with patch.dict(os.environ, GITEA_CLI_HOST="https://h", GITEA_INSTANCE_URL=""):
-                F.label_create("o/r", "gitea", "factory", "5319E7", "desc")
-        flat = " ".join(str(c) for c in calls)
+        flat = " ".join(str(c) for c in self._calls(env_host="https://h"))
         self.assertIn("--host", flat)
 
 
@@ -351,6 +394,19 @@ class TestPrCreateGitea(unittest.TestCase):
             with patch.dict(os.environ, GITEA_CLI_HOST="", GITEA_INSTANCE_URL=""):
                 F.pr_create("o/r", "gitea", "main", "b", "T", "/f", False)
         self.assertTrue(any("gt" in str(c) for c in calls))
+
+    def test_url_requested_as_json(self):
+        """Text output may change between gt releases; --json url --jq .url is stable."""
+        calls = []
+        with patch.object(F, "cli_run",
+                          side_effect=lambda *a, **kw: calls.append(a) or "https://x"):
+            with patch.dict(os.environ, GITEA_CLI_HOST="", GITEA_INSTANCE_URL=""):
+                F.pr_create("o/r", "gitea", "main", "b", "T", "/f", False)
+        args = list(calls[0])
+        self.assertEqual(args[args.index("--json") + 1], "url")
+        self.assertEqual(args[args.index("--jq") + 1], ".url")
+        for flag in ("--base", "--head", "--title", "--body-file", "--yes"):
+            self.assertIn(flag, args)
 
     def test_draft_flag(self):
         calls = []

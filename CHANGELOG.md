@@ -2,6 +2,22 @@
 
 ### Fixed
 
+- Gitea/Forgejo (`vcs: gitea`) now works with gitea-cli (`gt`) 2.x. The
+  backend assumed `gt` prints GitHub-style JSON; it prints Gitea's field names:
+  - `repo view` asked for `nameWithOwner,defaultBranchRef,isArchived`, which
+    `gt` rejects ("unknown JSON field"), so `add` failed. It now asks for
+    `full_name,default_branch,archived` and maps them.
+  - `label create` passed `--name NAME` and `--color #RRGGBB`; `gt` takes the
+    name as an argument and the colour without `#`. The error was swallowed,
+    so `add` reported success without creating labels, and every later
+    `issue list --label factory` failed because the label did not exist.
+    Labels now get their description too, and real failures are raised.
+  - `issue view` normalises `author` (object or string) to `{"login": ...}`
+    and `null` values to empty strings.
+  - `pr create` reads the URL with `--json url --jq .url` instead of the last
+    line of human-readable output.
+  The Gitea tests mocked `gt` with GitHub-shaped JSON and now use gitea-cli's
+  documented fields.
 - `gate` now advances the job from `build` to `gate` after every verdict
   (PASS, FAIL, protected-path, timeout), so the documented flow works:
   PASS → `stage review`, FAIL → `round-next` starts the next build round.
