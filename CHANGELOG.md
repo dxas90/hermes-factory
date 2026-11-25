@@ -2,6 +2,13 @@
 
 ### Fixed
 
+- `start` no longer leaves a claim behind when it fails. It claimed the issue
+  (created the job folder) before fetching the issue and creating the branch;
+  if either failed, the folder stayed without `job.json`. `monitor` ignored it
+  and showed the repo idle, while every later `start` refused with "claimed by
+  a concurrent process". Now `start` releases the claim on failure, reclaims a
+  claim folder without `job.json` older than two minutes, and refuses a
+  leftover `factory/issue-N` branch before claiming, saying how to fix it.
 - Gitea/Forgejo (`vcs: gitea`) now works with gitea-cli (`gt`) 2.x. The
   backend assumed `gt` prints GitHub-style JSON; it prints Gitea's field names:
   - `repo view` asked for `nameWithOwner,defaultBranchRef,isArchived`, which

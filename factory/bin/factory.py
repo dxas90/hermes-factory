@@ -38,6 +38,7 @@ Commands
 import argparse
 import fcntl
 import fnmatch
+import shutil
 import json
 import os
 import re
@@ -627,20 +628,41 @@ def start(args):
 
     # TOCTOU guard: claim the issue number by creating the job dir exclusively.
     # If two concurrent start() calls race, only one gets O_EXCL; the other fails.
-    claim_path = job_dir(slug, number) / "job.json"
-    try:
-        claim_path.parent.mkdir(parents=True, exist_ok=False)
-    except FileExistsError:
-        raise SystemExit(
-            f"#{number} was claimed by a concurrent process. "
-            "Run `factory.py monitor` to check current state.")
-
-    issue  = issue_view_full(slug, vcs, number, config=load_config(path))
     branch = f"{LABEL}/issue-{number}"
-    config = load_config(path)
+    # A leftover branch would make `git switch -c` fail after the claim.
+    # Refuse before claiming, with a message that says what to do.
+    if cli_run("git", "branch", "--list", branch, cwd=path, check=False):
+        raise SystemExit(
+            f"Branch {branch} already exists in {path}, but #{number} has no "
+            f"recorded job. Delete it (git switch {repo['base']} && "
+            f"git branch -D {branch}) or save its work elsewhere, then start again.")
 
-    cli_run("git", "fetch", "origin", repo["base"], cwd=path)
-    cli_run("git", "switch", "-c", branch, f"origin/{repo['base']}", cwd=path)
+    claim_dir  = job_dir(slug, number)
+    claim_path = claim_dir / "job.json"
+    try:
+        claim_dir.mkdir(parents=True, exist_ok=False)
+    except FileExistsError:
+        # A claim without job.json that is older than two minutes is debris
+        # from a start() that died after claiming; reclaim it. A younger one
+        # may belong to a concurrent start() that is still running.
+        stale = (not claim_path.exists()
+                 and time.time() - claim_dir.stat().st_mtime > 120)
+        if not stale:
+            raise SystemExit(
+                f"#{number} was claimed by a concurrent process. "
+                "Run `factory.py monitor` to check current state.")
+        shutil.rmtree(claim_dir)
+        claim_dir.mkdir(parents=True, exist_ok=False)
+
+    try:
+        issue  = issue_view_full(slug, vcs, number, config=load_config(path))
+        config = load_config(path)
+        cli_run("git", "fetch", "origin", repo["base"], cwd=path)
+        cli_run("git", "switch", "-c", branch, f"origin/{repo['base']}", cwd=path)
+    except BaseException:
+        # Release the claim so the issue can be started again.
+        shutil.rmtree(claim_dir, ignore_errors=True)
+        raise
 
     job = {
         "repo": slug, "path": path, "vcs": vcs, "issue": number,
