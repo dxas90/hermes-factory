@@ -849,15 +849,24 @@ def open_pr(args):
     final_body.write_text(
         f"{body}\n\nCloses #{job['issue']}\n\n_Built by the Hermes Software Factory._\n")
 
+    existing = job.get("pr_url")
     job["stage"]        = "pr"
     job["stages"]["pr"] = now()
-    log(job, "Pushing branch and opening PR/MR")
+    log(job, "Pushing branch and updating PR/MR" if existing
+        else "Pushing branch and opening PR/MR")
 
     try:
-        git_push(path, "--set-upstream", "origin", job["branch"])
-        url = pr_create(slug, vcs, job["base"], job["branch"],
-                        job["title"], str(final_body), draft,
-                        config=load_config(path))
+        if existing:
+            # Feedback round on an open PR/MR (see `reopen`): update its
+            # branch. Rounds rebase onto the base branch, so the push may
+            # replace the old tip, but only if nobody else pushed meanwhile.
+            git_push(path, "--force-with-lease", "origin", job["branch"])
+            url = existing
+        else:
+            git_push(path, "--set-upstream", "origin", job["branch"])
+            url = pr_create(slug, vcs, job["base"], job["branch"],
+                            job["title"], str(final_body), draft,
+                            config=load_config(path))
     except BaseException as exc:
         # Roll back stage to "approve" on any failure — SystemExit (cli_run),
         # KeyboardInterrupt (SIGTERM/Ctrl-C mid-push), or unexpected OSError.
@@ -868,13 +877,18 @@ def open_pr(args):
         raise
 
     job.update(pr=url, pr_url=url, state="done",
-               result="draft" if draft else "ready")
-    log(job, f"Opened {'draft ' if draft else ''}PR/MR: {url}")
+               result=(job.get("result") or "ready") if existing
+               else ("draft" if draft else "ready"))
+    log(job, f"Updated PR/MR: {url}" if existing
+        else f"Opened {'draft ' if draft else ''}PR/MR: {url}")
 
     # Switch back to base branch
     cli_run("git", "switch", job["base"], cwd=path, check=False)
 
-    print(f"{'Draft PR/MR' if draft else 'PR/MR'} for #{job['issue']}: {url}")
+    if existing:
+        print(f"Updated PR/MR for #{job['issue']}: {url}")
+    else:
+        print(f"{'Draft PR/MR' if draft else 'PR/MR'} for #{job['issue']}: {url}")
 
 
 # ── resume ────────────────────────────────────────────────────────────────────
@@ -901,6 +915,49 @@ def resume(args):
     job["state"] = "active"
     log(job, "Resumed by operator after blocker fixed")
     print(f"RESUMED #{job['issue']} in {slug} at stage {job['stage']}. Work preserved.")
+
+
+# ── reopen ────────────────────────────────────────────────────────────────────
+
+def reopen(args):
+    """Start a feedback round on a done job whose PR/MR is still open.
+
+    Comments on the issue or the PR/MR after it was opened are otherwise
+    never picked up: the queue skips issues that already have a job, and
+    `resume` only accepts stopped jobs. The caller checks that the PR/MR is
+    still open. Each feedback round gets the configured number of build
+    rounds, and `open-pr` then updates the same PR/MR.
+    """
+    repo = load_repo(args.repo)
+    slug = repo["repo"]
+
+    if active_job(slug):
+        raise SystemExit(f"A factory job is already active for {slug}.")
+
+    target = job_dir(slug, args.issue) / "job.json"
+    if not target.exists():
+        raise SystemExit(f"No recorded job for {slug} #{args.issue}.")
+    job = json.loads(target.read_text())
+
+    if job["state"] != "done" or not job.get("pr_url"):
+        raise SystemExit(
+            f"Job #{args.issue} is {job['state']!r}"
+            + ("" if job.get("pr_url") else " and has no PR/MR")
+            + "; reopen needs a done job whose PR/MR is still open.")
+    if job["path"] != repo["path"]:
+        raise SystemExit("The recorded clone path changed; inspect before reopening.")
+    if cli_run("git", "branch", "--show-current", cwd=job["path"]) != job["branch"]:
+        raise SystemExit(f"Check out {job['branch']} in {job['path']} before reopening.")
+
+    rounds = int(load_config(job["path"]).get("max_rounds", job["round_limit"]) or 1)
+    job["state"]       = "active"
+    job["round"]      += 1
+    job["round_limit"] = max(job["round_limit"], job["round"] + rounds - 1)
+    job["stage"]       = "build"
+    job["stages"]["build"] = now()
+    log(job, f"Reopened for feedback: {args.reason}")
+    print(f"REOPENED #{job['issue']} in {slug}: round {job['round']}/{job['round_limit']}, "
+          f"stage build. open-pr will update {job['pr_url']}.")
 
 
 # ── round-next ────────────────────────────────────────────────────────────────
@@ -1271,6 +1328,13 @@ def main():
     add_repo(s)
     s.add_argument("issue", type=int)
     s.set_defaults(func=resume)
+
+    s = sub.add_parser("reopen",
+                       help="start a feedback round on a done job whose PR/MR is open")
+    add_repo(s)
+    s.add_argument("issue", type=int)
+    s.add_argument("--reason", required=True)
+    s.set_defaults(func=reopen)
 
     s = sub.add_parser("stop", help="stop the active job without a PR/MR")
     add_repo(s, pos=False)

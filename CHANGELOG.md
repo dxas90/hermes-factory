@@ -2,6 +2,13 @@
 
 ### Fixed
 
+- Feedback that arrives after a PR/MR is opened is no longer stranded. A done
+  job could not be resumed (`resume` only accepts stopped jobs), the queue
+  skips issues that already have a job, and `open-pr` always created a new
+  PR/MR. New `reopen REPO N --reason` turns a done job whose PR/MR is still
+  open into an active build round with a fresh round budget, and `open-pr` on
+  a reopened job pushes the branch with `--force-with-lease` and keeps the
+  same PR/MR (it refuses to overwrite commits someone else pushed).
 - `start` no longer leaves a claim behind when it fails. It claimed the issue
   (created the job folder) before fetching the issue and creating the branch;
   if either failed, the folder stayed without `job.json`. `monitor` ignored it
